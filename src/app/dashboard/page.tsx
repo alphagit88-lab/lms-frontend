@@ -159,30 +159,94 @@ export default function DashboardPage() {
               QUICK ACTIONS
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <button className="px-4 py-3 text-sm font-medium text-black dark:text-white border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition text-left">
+              <button 
+                onClick={() => router.push('/courses')}
+                className="px-4 py-3 text-sm font-medium text-black dark:text-white border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition text-left"
+              >
                 View Courses
               </button>
-              <button className="px-4 py-3 text-sm font-medium text-black dark:text-white border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition text-left">
+              <button 
+                onClick={() => alert('Profile update coming soon!')}
+                className="px-4 py-3 text-sm font-medium text-black dark:text-white border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition text-left"
+              >
                 Update Profile
               </button>
-              <button className="px-4 py-3 text-sm font-medium text-black dark:text-white border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition text-left">
+              <button 
+                onClick={() => alert('Settings coming soon!')}
+                className="px-4 py-3 text-sm font-medium text-black dark:text-white border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition text-left"
+              >
                 Settings
               </button>
             </div>
           </div>
 
           {/* Role-specific content */}
-          {user?.role === 'instructor' && (
+          {user?.role === 'student' && (
+            <div className="mt-8 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 bg-blue-50 dark:bg-blue-900/20">
+              <h3 className="text-lg font-semibold text-black dark:text-white mb-2">
+                Student Tools
+              </h3>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+                Manage parent links and view your progress
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => router.push('/student/parent-links')}
+                  className="px-4 py-2 text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition"
+                >
+                  Manage Parent Links
+                </button>
+              </div>
+            </div>
+          )}
+
+          {user?.role === 'parent' && (
+            <div className="mt-8 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 bg-purple-50 dark:bg-purple-900/20">
+              <h3 className="text-lg font-semibold text-black dark:text-white mb-2">
+                Parent Dashboard
+              </h3>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+                Monitor your children&apos;s learning progress
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => router.push('/parent')}
+                  className="px-4 py-2 text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition"
+                >
+                  View Linked Students
+                </button>
+              </div>
+            </div>
+          )}
+
+          {(user?.role === 'instructor' || user?.role === 'admin') && (
             <div className="mt-8 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 bg-zinc-50 dark:bg-zinc-900">
               <h3 className="text-lg font-semibold text-black dark:text-white mb-2">
                 Instructor Tools
               </h3>
               <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
-                Manage your courses and students
+                Manage your courses, availability, and students
               </p>
-              <button className="px-4 py-2 text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition">
-                Create New Course
-              </button>
+              <div className="flex flex-wrap gap-3">
+                <button 
+                  onClick={() => router.push('/instructor/availability')}
+                  className="px-4 py-2 text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition"
+                >
+                  Manage Availability
+                </button>
+                <button 
+                  onClick={() => router.push('/instructor/courses/create')}
+                  className="px-4 py-2 text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition"
+                >
+                  Create New Course
+                </button>
+                <button 
+                  onClick={() => router.push('/instructor/courses')}
+                  className="px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 text-black dark:text-white rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
+                >
+                  My Courses
+                </button>
+              </div>
             </div>
           )}
 
@@ -195,10 +259,16 @@ export default function DashboardPage() {
                 Manage users, courses, and system settings
               </p>
               <div className="flex gap-3">
-                <button className="px-4 py-2 text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition">
+                <button 
+                  onClick={() => alert('User management coming soon!')}
+                  className="px-4 py-2 text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition"
+                >
                   Manage Users
                 </button>
-                <button className="px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 text-black dark:text-white rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition">
+                <button 
+                  onClick={() => alert('System settings coming soon!')}
+                  className="px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 text-black dark:text-white rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
+                >
                   System Settings
                 </button>
               </div>
