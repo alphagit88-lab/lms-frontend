@@ -1,65 +1,77 @@
-import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center px-4">
+      <div className="max-w-4xl mx-auto text-center">
+        {/* Logo/Title */}
+        <h1 className="text-6xl md:text-8xl font-bold text-black dark:text-white mb-6">
+          LMS
+        </h1>
+        
+        {/* Subtitle */}
+        <p className="text-xl md:text-2xl text-zinc-600 dark:text-zinc-400 mb-4">
+          Learning Management System
+        </p>
+        
+        <p className="text-lg text-zinc-500 dark:text-zinc-500 mb-12 max-w-2xl mx-auto">
+          A modern platform for online learning. Create, share, and discover courses.
+        </p>
+
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+          <Link
+            href="/login"
+            className="w-full sm:w-auto px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-lg font-medium text-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Sign In
+          </Link>
+          <Link
+            href="/register"
+            className="w-full sm:w-auto px-8 py-4 border-2 border-black dark:border-white text-black dark:text-white rounded-lg font-medium text-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
           >
-            Documentation
-          </a>
+            Create Account
+          </Link>
         </div>
-      </main>
+
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
+          <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition">
+            <div className="text-4xl mb-4">📚</div>
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-2">
+              Rich Content
+            </h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              Create courses with video, text, and interactive multimedia content
+            </p>
+          </div>
+          
+          <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition">
+            <div className="text-4xl mb-4">🎯</div>
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-2">
+              Track Progress
+            </h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              Monitor your learning journey with detailed progress tracking
+            </p>
+          </div>
+          
+          <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition">
+            <div className="text-4xl mb-4">👥</div>
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-2">
+              Learn Together
+            </h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              Join a community of learners and instructors worldwide
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="mt-20 text-sm text-zinc-500">
+          © 2026 LMS. All rights reserved.
+        </footer>
+      </div>
     </div>
   );
 }
