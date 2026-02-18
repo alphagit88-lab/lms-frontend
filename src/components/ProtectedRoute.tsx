@@ -4,11 +4,15 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  allowedRoles?: string[];
+}
+
 export default function ProtectedRoute({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+  allowedRoles,
+}: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -31,6 +35,18 @@ export default function ProtectedRoute({
 
   if (!user) {
     return null;
+  }
+
+  // Check role-based access if allowedRoles is specified
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-red-600 text-xl mb-4">⚠️ Access Denied</div>
+          <p className="text-gray-700">You do not have permission to access this page.</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

@@ -12,7 +12,7 @@ interface AuthContextType {
     password: string;
     firstName: string;
     lastName: string;
-    role?: 'student' | 'instructor' | 'admin';
+    role?: 'student' | 'instructor' | 'parent' | 'admin';
   }) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { user } = await authAPI.getCurrentUser();
       setUser(user);
-    } catch (error) {
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string;
     firstName: string;
     lastName: string;
-    role?: 'student' | 'instructor' | 'admin';
+    role?: 'student' | 'instructor' | 'parent' | 'admin';
   }) => {
     const response = await authAPI.register(data);
     setUser(response.user);
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { user } = await authAPI.getCurrentUser();
       setUser(user);
-    } catch (error) {
+    } catch {
       setUser(null);
     }
   };
