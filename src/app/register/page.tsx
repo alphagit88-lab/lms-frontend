@@ -14,7 +14,7 @@ export default function RegisterPage() {
     confirmPassword: '',
     firstName: '',
     lastName: '',
-    role: 'student' as 'student' | 'instructor' | 'admin',
+    role: 'student' as 'student' | 'instructor' | 'parent' | 'admin',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -161,6 +161,7 @@ export default function RegisterPage() {
               >
                 <option value="student">Learn (Student)</option>
                 <option value="instructor">Teach (Instructor)</option>
+                <option value="parent">Monitor Child (Parent)</option>
               </select>
             </div>
 
