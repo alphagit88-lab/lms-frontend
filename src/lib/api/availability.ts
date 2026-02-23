@@ -60,6 +60,23 @@ export interface UpdateSlotData {
   status?: 'available' | 'booked' | 'blocked';
 }
 
+export interface CreateRecurringData {
+  dayOfWeek: string;
+  startTime: string;       // HH:mm format
+  endTime: string;          // HH:mm format
+  recurrenceEndDate: string; // YYYY-MM-DD
+  price?: number;
+  maxBookings?: number;
+  notes?: string;
+}
+
+export interface RecurringResponse {
+  message: string;
+  slots: AvailabilitySlot[];
+  count: number;
+  skippedDates: string[];
+}
+
 // Helper
 async function apiFetch(endpoint: string, options?: RequestInit) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -139,6 +156,40 @@ export async function blockSlot(id: string): Promise<AvailabilitySlot> {
     method: 'POST',
   });
   return data.slot;
+}
+
+/**
+ * Unblock a blocked slot (Teacher only)
+ */
+export async function unblockSlot(id: string): Promise<AvailabilitySlot> {
+  const data = await apiFetch(`/api/availability/slots/${id}/unblock`, {
+    method: 'POST',
+  });
+  return data.slot;
+}
+
+/**
+ * Create recurring availability slots (Teacher only)
+ */
+export async function createRecurringSlots(data: CreateRecurringData): Promise<RecurringResponse> {
+  return apiFetch('/api/availability/recurring', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Cancel all future unbooked recurring slots matching a pattern (Teacher only)
+ */
+export async function cancelFutureRecurring(params: {
+  dayOfWeek: string;
+  startTime?: string;
+  endTime?: string;
+}): Promise<{ message: string; deletedCount: number; protectedSlots: { id: string; date: string; bookings: number }[] }> {
+  return apiFetch('/api/availability/recurring/cancel', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
 }
 
 // ─── Public (Student-facing) ─────────────────────────────────────────
