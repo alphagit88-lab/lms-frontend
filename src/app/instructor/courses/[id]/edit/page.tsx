@@ -14,6 +14,7 @@ import {
   UpdateCourseData,
 } from '@/lib/api/courses';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
 
 function EditCourseContent() {
@@ -90,29 +91,16 @@ function EditCourseContent() {
     e.preventDefault();
     setError('');
 
-    // Validation
-    if (!formData.title?.trim()) {
-      setError('Title is required');
-      return;
-    }
-    if (formData.title.length > 200) {
-      setError('Title must be less than 200 characters');
-      return;
-    }
-    if (!formData.description?.trim()) {
-      setError('Description is required');
-      return;
-    }
-    if (formData.description.length > 5000) {
-      setError('Description must be less than 5000 characters');
-      return;
-    }
+    if (!formData.title?.trim()) { setError('Title is required'); return; }
+    if (formData.title.length > 200) { setError('Title must be less than 200 characters'); return; }
+    if (!formData.description?.trim()) { setError('Description is required'); return; }
+    if (formData.description.length > 5000) { setError('Description must be less than 5000 characters'); return; }
 
     try {
       setSaving(true);
       await updateCourse(courseId, formData);
       alert('Course updated successfully!');
-      loadCourse(); // Reload to get updated data
+      loadCourse();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to update course');
     } finally {
@@ -122,7 +110,6 @@ function EditCourseContent() {
 
   const handleTogglePublish = async () => {
     if (!course) return;
-
     const action = course.isPublished ? 'unpublish' : 'publish';
     if (!confirm(`Are you sure you want to ${action} this course?`)) return;
 
@@ -137,15 +124,9 @@ function EditCourseContent() {
 
   const handleDelete = async () => {
     if (!course) return;
-
-    if (!confirm(`Are you sure you want to delete "${course.title}"? This action cannot be undone.`)) {
-      return;
-    }
-
+    if (!confirm(`Are you sure you want to delete "${course.title}"? This action cannot be undone.`)) return;
     const confirmText = prompt('Type "DELETE" to confirm:');
-    if (confirmText !== 'DELETE') {
-      return;
-    }
+    if (confirmText !== 'DELETE') return;
 
     try {
       await deleteCourse(courseId);
@@ -156,230 +137,157 @@ function EditCourseContent() {
     }
   };
 
+  const inputClasses = "w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm";
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading course...</p>
+      <AppLayout>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-3 text-sm text-slate-500">Loading course...</p>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   if (error && !course) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 text-xl mb-4">⚠️ Error</div>
-          <p className="text-gray-700">{error}</p>
-          <Link
-            href="/instructor/courses"
-            className="mt-4 inline-block text-black hover:underline"
-          >
+      <AppLayout>
+        <div className="text-center py-20">
+          <div className="text-red-500 mb-4">
+            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <p className="text-slate-700 text-sm mb-4">{error}</p>
+          <Link href="/instructor/courses" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
             ← Back to Courses
           </Link>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
-  // Check if user is the instructor of this course
   const isOwner = user?.id === course?.instructor?.id || user?.role === 'admin';
   if (!isOwner) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 text-xl mb-4">⚠️ Access Denied</div>
-          <p className="text-gray-700">You don&apos;t have permission to edit this course.</p>
-          <Link
-            href="/instructor/courses"
-            className="mt-4 inline-block text-black hover:underline"
-          >
+      <AppLayout>
+        <div className="text-center py-20">
+          <div className="text-red-500 mb-4">
+            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+          </div>
+          <p className="text-slate-700 text-sm mb-4">You don&apos;t have permission to edit this course.</p>
+          <Link href="/instructor/courses" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
             ← Back to Courses
           </Link>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppLayout>
       {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/instructor/courses"
-                className="text-gray-600 hover:text-gray-900"
-              >
-                ← Back
-              </Link>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Edit Course</h1>
-                <p className="mt-1 text-gray-600">
-                  Last updated: {new Date(course?.updatedAt || '').toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-
-            {/* Publish Status Badge */}
-            <div>
-              {course?.isPublished ? (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                  ✓ Published
-                </span>
-              ) : (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                  ⏸ Draft
-                </span>
-              )}
-            </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <Link href="/instructor/courses" className="text-slate-400 hover:text-slate-600 transition">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Edit Course</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Last updated: {new Date(course?.updatedAt || '').toLocaleDateString()}
+            </p>
           </div>
         </div>
+        {course?.isPublished ? (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 self-start">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            Published
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200 self-start">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            Draft
+          </span>
+        )}
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Error Message */}
+      <div className="max-w-3xl">
+        {/* Error */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 text-sm">{error}</div>
         )}
 
         {/* Stats */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Course Stats</h2>
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-6">
+          <h2 className="text-sm font-semibold text-slate-900 mb-4">Course Stats</h2>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <div className="text-2xl font-bold text-gray-900">{course?.enrollmentCount || 0}</div>
-              <div className="text-sm text-gray-600">Students Enrolled</div>
+              <div className="text-2xl font-bold text-slate-900">{course?.enrollmentCount || 0}</div>
+              <div className="text-xs text-slate-500">Students</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">{course?.lessons?.length || 0}</div>
-              <div className="text-sm text-gray-600">Lessons</div>
+              <div className="text-2xl font-bold text-slate-900">{course?.lessons?.length || 0}</div>
+              <div className="text-xs text-slate-500">Lessons</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">${course?.price?.toFixed(2)}</div>
-              <div className="text-sm text-gray-600">Price</div>
+              <div className="text-2xl font-bold text-slate-900">${course?.price ? Number(course.price).toFixed(2) : '0.00'}</div>
+              <div className="text-xs text-slate-500">Price</div>
             </div>
           </div>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-          {/* Title */}
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-1.5">
               Course Title <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              required
-              maxLength={200}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
-            />
-            <p className="mt-1 text-xs text-gray-500">{formData.title?.length || 0}/200 characters</p>
+            <input type="text" id="title" name="title" value={formData.title} onChange={handleChange} required maxLength={200} className={inputClasses} />
+            <p className="mt-1 text-xs text-slate-400">{formData.title?.length || 0}/200 characters</p>
           </div>
 
-          {/* Slug */}
           <div>
-            <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="slug" className="block text-sm font-medium text-slate-700 mb-1.5">
               Course Slug <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              id="slug"
-              name="slug"
-              value={formData.slug}
-              onChange={handleChange}
-              required
-              pattern="[a-z0-9-]+"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              URL-friendly version (lowercase letters, numbers, and hyphens only)
-            </p>
+            <input type="text" id="slug" name="slug" value={formData.slug} onChange={handleChange} required pattern="[a-z0-9-]+" className={inputClasses} />
+            <p className="mt-1 text-xs text-slate-400">URL-friendly version</p>
           </div>
 
-          {/* Short Description */}
           <div>
-            <label htmlFor="shortDescription" className="block text-sm font-medium text-gray-700 mb-1">
-              Short Description
-            </label>
-            <input
-              type="text"
-              id="shortDescription"
-              name="shortDescription"
-              value={formData.shortDescription}
-              onChange={handleChange}
-              maxLength={200}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Displayed in course listings (optional, max 200 characters)
-            </p>
+            <label htmlFor="shortDescription" className="block text-sm font-medium text-slate-700 mb-1.5">Short Description</label>
+            <input type="text" id="shortDescription" name="shortDescription" value={formData.shortDescription} onChange={handleChange} maxLength={200} className={inputClasses} />
           </div>
 
-          {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-1.5">
               Full Description <span className="text-red-500">*</span>
             </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              required
-              rows={8}
-              maxLength={5000}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
-            />
-            <p className="mt-1 text-xs text-gray-500">{formData.description?.length || 0}/5000 characters</p>
+            <textarea id="description" name="description" value={formData.description} onChange={handleChange} required rows={8} maxLength={5000} className={inputClasses} />
+            <p className="mt-1 text-xs text-slate-400">{formData.description?.length || 0}/5000 characters</p>
           </div>
 
-          {/* Category and Level */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Category */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-1">
-                Category
-              </label>
-              <select
-                id="categoryId"
-                name="categoryId"
-                value={formData.categoryId}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
-              >
+              <label htmlFor="categoryId" className="block text-sm font-medium text-slate-700 mb-1.5">Category</label>
+              <select id="categoryId" name="categoryId" value={formData.categoryId} onChange={handleChange} className={inputClasses}>
                 <option value="">Select a category</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
+                {categories.map((cat) => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
               </select>
             </div>
-
-            {/* Level */}
             <div>
-              <label htmlFor="level" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="level" className="block text-sm font-medium text-slate-700 mb-1.5">
                 Difficulty Level <span className="text-red-500">*</span>
               </label>
-              <select
-                id="level"
-                name="level"
-                value={formData.level}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
-              >
+              <select id="level" name="level" value={formData.level} onChange={handleChange} required className={inputClasses}>
                 <option value="beginner">Beginner</option>
                 <option value="intermediate">Intermediate</option>
                 <option value="advanced">Advanced</option>
@@ -387,87 +295,50 @@ function EditCourseContent() {
             </div>
           </div>
 
-          {/* Price */}
           <div>
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="price" className="block text-sm font-medium text-slate-700 mb-1.5">
               Price (USD) <span className="text-red-500">*</span>
             </label>
-            <input
-              type="number"
-              id="price"
-              name="price"
-              value={formData.price}
-              onChange={handleChange}
-              min="0"
-              step="0.01"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
-            />
-            <p className="mt-1 text-xs text-gray-500">Set to 0 for free courses</p>
+            <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} min="0" step="0.01" required className={inputClasses} />
+            <p className="mt-1 text-xs text-slate-400">Set to 0 for free courses</p>
           </div>
 
-          {/* Thumbnail URL */}
           <div>
-            <label htmlFor="thumbnail" className="block text-sm font-medium text-gray-700 mb-1">
-              Thumbnail Image URL
-            </label>
-            <input
-              type="url"
-              id="thumbnail"
-              name="thumbnail"
-              value={formData.thumbnail}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
-            />
+            <label htmlFor="thumbnail" className="block text-sm font-medium text-slate-700 mb-1.5">Thumbnail Image URL</label>
+            <input type="url" id="thumbnail" name="thumbnail" value={formData.thumbnail} onChange={handleChange} className={inputClasses} />
           </div>
 
-          {/* Preview Video URL */}
           <div>
-            <label htmlFor="previewVideoUrl" className="block text-sm font-medium text-gray-700 mb-1">
-              Preview Video URL
-            </label>
-            <input
-              type="url"
-              id="previewVideoUrl"
-              name="previewVideoUrl"
-              value={formData.previewVideoUrl}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
-            />
+            <label htmlFor="previewVideoUrl" className="block text-sm font-medium text-slate-700 mb-1.5">Preview Video URL</label>
+            <input type="url" id="previewVideoUrl" name="previewVideoUrl" value={formData.previewVideoUrl} onChange={handleChange} className={inputClasses} />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-4 pt-4 border-t">
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
+          <div className="flex gap-3 pt-5 border-t border-slate-100">
+            <button type="submit" disabled={saving}
+              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:bg-slate-300 disabled:cursor-not-allowed shadow-sm">
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
-            <Link
-              href="/instructor/courses"
-              className="px-6 py-2 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition"
-            >
+            <Link href="/instructor/courses"
+              className="px-6 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 transition">
               Cancel
             </Link>
           </div>
         </form>
 
-        {/* Publish/Unpublish Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Publishing</h2>
-          <p className="text-gray-600 mb-4">
+        {/* Publishing */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mt-6">
+          <h2 className="text-sm font-semibold text-slate-900 mb-3">Publishing</h2>
+          <p className="text-slate-500 mb-4 text-sm">
             {course?.isPublished
               ? 'This course is currently published and visible to students.'
               : 'This course is currently a draft and not visible to students.'}
           </p>
           <button
             onClick={handleTogglePublish}
-            className={`px-6 py-2 rounded-md transition ${
+            className={`px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm ${
               course?.isPublished
-                ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                : 'bg-green-600 text-white hover:bg-green-700'
+                ? 'bg-amber-500 text-white hover:bg-amber-600'
+                : 'bg-emerald-600 text-white hover:bg-emerald-700'
             }`}
           >
             {course?.isPublished ? 'Unpublish Course' : 'Publish Course'}
@@ -475,20 +346,20 @@ function EditCourseContent() {
         </div>
 
         {/* Danger Zone */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mt-6 border-2 border-red-200">
-          <h2 className="text-lg font-semibold text-red-600 mb-4">Danger Zone</h2>
-          <p className="text-gray-600 mb-4">
+        <div className="bg-white rounded-xl border-2 border-red-200 shadow-sm p-6 mt-6">
+          <h2 className="text-sm font-semibold text-red-600 mb-3">Danger Zone</h2>
+          <p className="text-slate-500 mb-4 text-sm">
             Once you delete a course, there is no going back. Please be certain.
           </p>
           <button
             onClick={handleDelete}
-            className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
+            className="px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition shadow-sm"
           >
             Delete Course
           </button>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }
 
