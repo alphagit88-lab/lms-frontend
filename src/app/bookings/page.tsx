@@ -142,17 +142,15 @@ export default function StudentBookingsPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition ${
-                activeTab === tab.id
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition ${activeTab === tab.id
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
-              }`}
+                }`}
             >
               <span>{tab.label}</span>
               {tab.count > 0 && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                  activeTab === tab.id ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-500'
-                }`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${activeTab === tab.id ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-500'
+                  }`}>
                   {tab.count}
                 </span>
               )}
@@ -211,11 +209,10 @@ export default function StudentBookingsPage() {
               return (
                 <div
                   key={booking.id}
-                  className={`bg-white rounded-xl border shadow-sm p-5 ${
-                    isToday && booking.status === 'confirmed'
+                  className={`bg-white rounded-xl border shadow-sm p-5 ${isToday && booking.status === 'confirmed'
                       ? 'border-emerald-300 ring-1 ring-emerald-100'
                       : 'border-slate-200'
-                  }`}
+                    }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                     <div className="flex-1 min-w-0">
@@ -235,7 +232,7 @@ export default function StudentBookingsPage() {
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
                         <div className="flex items-center gap-2 text-slate-600">
                           <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -289,13 +286,12 @@ export default function StudentBookingsPage() {
                             </div>
                           )}
                           {booking.refundPercentage != null && (
-                            <div className={`rounded-lg px-3 py-2 text-sm ${
-                              booking.refundPercentage === 100
+                            <div className={`rounded-lg px-3 py-2 text-sm ${booking.refundPercentage === 100
                                 ? 'bg-emerald-50 text-emerald-700'
                                 : booking.refundPercentage > 0
-                                ? 'bg-amber-50 text-amber-700'
-                                : 'bg-slate-50 text-slate-600'
-                            }`}>
+                                  ? 'bg-amber-50 text-amber-700'
+                                  : 'bg-slate-50 text-slate-600'
+                              }`}>
                               <span className="font-medium">
                                 Refund: {booking.refundPercentage}%
                                 {booking.refundAmount != null && Number(booking.refundAmount) > 0 && (

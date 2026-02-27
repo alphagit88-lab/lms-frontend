@@ -140,6 +140,11 @@ function InstructorCoursesContent() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h3 className="text-base font-semibold text-slate-900 truncate">{course.title}</h3>
+                        {course.medium && (
+                          <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-700 border border-blue-200 capitalize">
+                            {course.medium}
+                          </span>
+                        )}
                         {getStatusBadge(course)}
                       </div>
                       <p className="text-sm text-slate-500 line-clamp-2">

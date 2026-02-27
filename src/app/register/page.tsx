@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +18,17 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, authLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,14 +47,19 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await register({
+      const user = await register({
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
         role: formData.role,
       });
-      router.push('/dashboard');
+
+      if (user.role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Registration failed. Please try again.';
       setError(errorMessage);
@@ -74,10 +90,10 @@ export default function RegisterPage() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-60" />
         <div className="relative flex flex-col justify-center items-center w-full p-12 text-white">
           <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-8">
-            <span className="text-3xl font-bold">L</span>
+            <span className="text-3xl font-semibold">L</span>
           </div>
-          <h1 className="text-4xl font-bold mb-4">Join LMS Today</h1>
-          <p className="text-blue-200 text-center max-w-sm text-lg leading-relaxed">
+          <h1 className="text-4xl font-semibold mb-4">Join LMS Today</h1>
+          <p className="text-blue-200 text-center max-w-sm text-lg leading-relaxed font-medium">
             Start your journey in learning or teaching with our modern platform.
           </p>
           <div className="mt-12 space-y-4 w-full max-w-xs">
@@ -106,10 +122,10 @@ export default function RegisterPage() {
           </div>
 
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-slate-900">
+            <h2 className="text-2xl font-semibold text-slate-900">
               Create your account
             </h2>
-            <p className="text-slate-500 mt-2">
+            <p className="text-slate-500 mt-2 font-medium">
               Get started in just a few steps
             </p>
           </div>
@@ -186,11 +202,10 @@ export default function RegisterPage() {
                       key={role.value}
                       type="button"
                       onClick={() => setFormData({ ...formData, role: role.value as typeof formData.role })}
-                      className={`p-3 rounded-xl border-2 text-center transition-all ${
-                        formData.role === role.value
-                          ? 'border-blue-500 bg-blue-50 shadow-sm'
-                          : 'border-slate-200 hover:border-slate-300'
-                      }`}
+                      className={`p-3 rounded-xl border-2 text-center transition-all ${formData.role === role.value
+                        ? 'border-blue-500 bg-blue-50 shadow-sm'
+                        : 'border-slate-200 hover:border-slate-300'
+                        }`}
                     >
                       <div className="text-xl mb-1">{role.icon}</div>
                       <div className={`text-xs font-semibold ${formData.role === role.value ? 'text-blue-700' : 'text-slate-700'}`}>

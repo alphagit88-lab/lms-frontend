@@ -17,6 +17,7 @@ export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<'beginner' | 'intermediate' | 'advanced' | ''>('');
+  const [selectedMedium, setSelectedMedium] = useState('');
 
   useEffect(() => {
     loadCourses();
@@ -51,6 +52,7 @@ export default function CoursesPage() {
     if (searchQuery) filters.search = searchQuery;
     if (selectedCategory) filters.category = selectedCategory;
     if (selectedLevel) filters.level = selectedLevel;
+    if (selectedMedium) filters.medium = selectedMedium;
     loadCourses(filters);
   };
 
@@ -58,6 +60,7 @@ export default function CoursesPage() {
     setSearchQuery('');
     setSelectedCategory('');
     setSelectedLevel('');
+    setSelectedMedium('');
     loadCourses({ published: true });
   };
 
@@ -82,15 +85,15 @@ export default function CoursesPage() {
   return (
     <AppLayout>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Browse Courses</h1>
-        <p className="text-sm text-slate-500 mt-1">Explore our wide range of courses and start learning today</p>
+      <div className="mb-10">
+        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Browse Courses</h1>
+        <p className="text-slate-500 font-medium mt-1">Explore our wide range of courses and start learning today</p>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="md:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="lg:col-span-2">
             <label htmlFor="search" className="block text-sm font-medium text-slate-700 mb-1.5">
               Search
             </label>
@@ -136,6 +139,23 @@ export default function CoursesPage() {
               <option value="beginner">Beginner</option>
               <option value="intermediate">Intermediate</option>
               <option value="advanced">Advanced</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="medium" className="block text-sm font-medium text-slate-700 mb-1.5">
+              Medium
+            </label>
+            <select
+              id="medium"
+              value={selectedMedium}
+              onChange={(e) => setSelectedMedium(e.target.value)}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+            >
+              <option value="">All Mediums</option>
+              <option value="english">English</option>
+              <option value="sinhala">Sinhala</option>
+              <option value="tamil">Tamil</option>
             </select>
           </div>
         </div>
@@ -209,7 +229,12 @@ export default function CoursesPage() {
                       </svg>
                     </div>
                   )}
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute top-2 right-2 flex gap-1.5">
+                    {course.medium && (
+                      <span className="px-2 py-1 text-xs font-medium rounded-full border bg-blue-50 text-blue-700 border-blue-200 capitalize">
+                        {course.medium}
+                      </span>
+                    )}
                     <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getLevelBadgeColor(course.level)}`}>
                       {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
                     </span>

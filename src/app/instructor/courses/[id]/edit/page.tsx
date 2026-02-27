@@ -39,6 +39,7 @@ function EditCourseContent() {
     price: 0,
     thumbnail: '',
     previewVideoUrl: '',
+    medium: 'english',
   });
 
   useEffect(() => {
@@ -62,6 +63,7 @@ function EditCourseContent() {
         price: data.price || 0,
         thumbnail: data.thumbnail || '',
         previewVideoUrl: data.previewVideoUrl || '',
+        medium: data.medium || 'english',
       });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load course');
@@ -275,7 +277,7 @@ function EditCourseContent() {
             <p className="mt-1 text-xs text-slate-400">{formData.description?.length || 0}/5000 characters</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
               <label htmlFor="categoryId" className="block text-sm font-medium text-slate-700 mb-1.5">Category</label>
               <select id="categoryId" name="categoryId" value={formData.categoryId} onChange={handleChange} className={inputClasses}>
@@ -291,6 +293,16 @@ function EditCourseContent() {
                 <option value="beginner">Beginner</option>
                 <option value="intermediate">Intermediate</option>
                 <option value="advanced">Advanced</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="medium" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Course Medium <span className="text-red-500">*</span>
+              </label>
+              <select id="medium" name="medium" value={formData.medium} onChange={handleChange} required className={inputClasses}>
+                <option value="english">English</option>
+                <option value="sinhala">Sinhala</option>
+                <option value="tamil">Tamil</option>
               </select>
             </div>
           </div>
@@ -335,11 +347,10 @@ function EditCourseContent() {
           </p>
           <button
             onClick={handleTogglePublish}
-            className={`px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm ${
-              course?.isPublished
+            className={`px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm ${course?.isPublished
                 ? 'bg-amber-500 text-white hover:bg-amber-600'
                 : 'bg-emerald-600 text-white hover:bg-emerald-700'
-            }`}
+              }`}
           >
             {course?.isPublished ? 'Unpublish Course' : 'Publish Course'}
           </button>

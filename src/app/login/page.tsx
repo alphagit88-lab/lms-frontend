@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +14,17 @@ export default function LoginPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, authLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,8 +32,12 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(formData.email, formData.password);
-      router.push('/dashboard');
+      const user = await login(formData.email, formData.password);
+      if (user.role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed. Please check your credentials.';
       setError(errorMessage);
@@ -45,24 +60,24 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-60" />
         <div className="relative flex flex-col justify-center items-center w-full p-12 text-white">
           <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-8">
-            <span className="text-3xl font-bold">L</span>
+            <span className="text-3xl font-semibold">L</span>
           </div>
-          <h1 className="text-4xl font-bold mb-4">Welcome to LMS</h1>
-          <p className="text-blue-200 text-center max-w-sm text-lg leading-relaxed">
+          <h1 className="text-4xl font-semibold mb-4">Welcome to LMS</h1>
+          <p className="text-blue-200 text-center max-w-sm text-lg leading-relaxed font-medium">
             A modern platform for learning, teaching, and growing together.
           </p>
           <div className="mt-12 grid grid-cols-3 gap-8 text-center">
             <div>
-              <div className="text-2xl font-bold">100+</div>
-              <div className="text-blue-200 text-sm mt-1">Teachers</div>
+              <div className="text-2xl font-semibold">100+</div>
+              <div className="text-blue-200 text-sm mt-1 font-medium">Teachers</div>
             </div>
             <div>
-              <div className="text-2xl font-bold">500+</div>
-              <div className="text-blue-200 text-sm mt-1">Students</div>
+              <div className="text-2xl font-semibold">500+</div>
+              <div className="text-blue-200 text-sm mt-1 font-medium">Students</div>
             </div>
             <div>
-              <div className="text-2xl font-bold">50+</div>
-              <div className="text-blue-200 text-sm mt-1">Courses</div>
+              <div className="text-2xl font-semibold">50+</div>
+              <div className="text-blue-200 text-sm mt-1 font-medium">Courses</div>
             </div>
           </div>
         </div>
@@ -79,10 +94,10 @@ export default function LoginPage() {
           </div>
 
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-slate-900">
+            <h2 className="text-2xl font-semibold text-slate-900">
               Sign in to your account
             </h2>
-            <p className="text-slate-500 mt-2">
+            <p className="text-slate-500 mt-2 font-medium">
               Enter your credentials to access your dashboard
             </p>
           </div>
@@ -130,6 +145,15 @@ export default function LoginPage() {
                 />
               </div>
 
+              <div className="flex justify-end">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium transition"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
               <button
                 type="submit"
                 disabled={loading}
@@ -159,8 +183,9 @@ export default function LoginPage() {
               </p>
               <div className="grid grid-cols-1 gap-1.5 text-xs text-slate-500">
                 <div className="flex justify-between"><span className="font-medium text-slate-600">Admin</span><span>admin@lms.com / Admin@123</span></div>
-                <div className="flex justify-between"><span className="font-medium text-slate-600">Instructor</span><span>instructor@lms.com / Instructor@123</span></div>
-                <div className="flex justify-between"><span className="font-medium text-slate-600">Student</span><span>student@lms.com / Student@123</span></div>
+                <div className="flex justify-between"><span className="font-medium text-slate-600">Instructor</span><span>jason1@gmail.com /Ja111111@</span></div>
+                <div className="flex justify-between"><span className="font-medium text-slate-600">Student</span><span>chanjaystu1@gmail.com/Ch11111@</span></div>
+                <div className="flex justify-between"><span className="font-medium text-slate-600">Parent</span><span>parent@lms.com/Parent@123</span></div>
               </div>
             </div>
 

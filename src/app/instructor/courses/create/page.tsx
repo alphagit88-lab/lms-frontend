@@ -23,6 +23,7 @@ function CreateCourseContent() {
     price: 0,
     thumbnail: '',
     previewVideoUrl: '',
+    medium: 'english',
   });
 
   useEffect(() => {
@@ -139,7 +140,7 @@ function CreateCourseContent() {
           <p className="mt-1 text-xs text-slate-400">{formData.description.length}/5000 characters</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div>
             <label htmlFor="categoryId" className="block text-sm font-medium text-slate-700 mb-1.5">Category</label>
             <select id="categoryId" name="categoryId" value={formData.categoryId} onChange={handleChange} className={inputClasses}>
@@ -155,6 +156,16 @@ function CreateCourseContent() {
               <option value="beginner">Beginner</option>
               <option value="intermediate">Intermediate</option>
               <option value="advanced">Advanced</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="medium" className="block text-sm font-medium text-slate-700 mb-1.5">
+              Course Medium <span className="text-red-500">*</span>
+            </label>
+            <select id="medium" name="medium" value={formData.medium} onChange={handleChange} required className={inputClasses}>
+              <option value="english">English</option>
+              <option value="sinhala">Sinhala</option>
+              <option value="tamil">Tamil</option>
             </select>
           </div>
         </div>

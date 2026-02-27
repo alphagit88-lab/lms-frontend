@@ -44,28 +44,15 @@ export default function CourseDetailPage() {
       return;
     }
 
-    try {
-      setEnrolling(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/enrollments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ courseId }),
-      });
+    setEnrolling(true);
+    // Push to the new checkout system
+    const checkoutUrl = new URL(window.location.origin + '/checkout');
+    checkoutUrl.searchParams.append('type', 'course_enrollment');
+    checkoutUrl.searchParams.append('referenceId', courseId);
+    checkoutUrl.searchParams.append('price', course?.price?.toString() || "0");
+    checkoutUrl.searchParams.append('title', course?.title || "");
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to enroll');
-      }
-
-      await loadCourse();
-      alert('Successfully enrolled in the course!');
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to enroll in course';
-      alert(errorMessage);
-    } finally {
-      setEnrolling(false);
-    }
+    router.push(checkoutUrl.pathname + checkoutUrl.search);
   };
 
   const formatPrice = (price: number | string | undefined) => {
@@ -148,6 +135,11 @@ export default function CourseDetailPage() {
               <span className={`px-3 py-1 rounded-full border text-xs font-medium ${getLevelBadgeColor(course.level)}`}>
                 {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
               </span>
+              {course.medium && (
+                <span className="px-3 py-1 rounded-full border text-xs font-medium bg-blue-50 text-blue-700 border-blue-200 capitalize">
+                  {course.medium}
+                </span>
+              )}
               <span className="flex items-center gap-1.5 text-slate-300">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
