@@ -10,6 +10,7 @@ export interface Recording {
   durationMinutes?: number;
   videoQuality?: string;
   thumbnailUrl?: string;
+  downloadUrl?: string;
   isProcessed: boolean;
   isPublic: boolean;
   viewCount: number;
@@ -32,7 +33,7 @@ export interface Recording {
 }
 
 export interface CreateRecordingData {
-  sessionId: string;
+  sessionId?: string;   // optional — standalone recordings don't require a session
   fileUrl: string;
   fileSize?: number;
   durationMinutes?: number;

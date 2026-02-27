@@ -150,7 +150,9 @@ export async function getAllContent(filters?: ContentFilters): Promise<Content[]
     throw new Error(error.error || 'Failed to fetch content');
   }
 
-  return response.json();
+  // Backend returns { contents: Content[], pagination: {...} } — extract the array
+  const data = await response.json();
+  return Array.isArray(data) ? data : (data.contents ?? []);
 }
 
 /**

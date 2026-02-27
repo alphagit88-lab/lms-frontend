@@ -48,6 +48,7 @@ export interface Course {
   category?: Category;
   lessons?: Lesson[];
   isEnrolled?: boolean;
+  medium?: 'english' | 'sinhala' | 'tamil' | string;
 }
 
 export interface Lesson {
@@ -71,6 +72,7 @@ export interface CourseFilters {
   search?: string;
   instructor?: string;
   published?: boolean;
+  medium?: string;
 }
 
 export interface CreateCourseData {
@@ -83,6 +85,7 @@ export interface CreateCourseData {
   price: number;
   thumbnail?: string;
   previewVideoUrl?: string;
+  medium?: 'english' | 'sinhala' | 'tamil' | string;
 }
 
 export interface UpdateCourseData {
@@ -97,6 +100,7 @@ export interface UpdateCourseData {
   previewVideoUrl?: string;
   status?: 'draft' | 'published' | 'archived';
   isPublished?: boolean;
+  medium?: 'english' | 'sinhala' | 'tamil' | string;
 }
 
 // API Functions
@@ -106,15 +110,16 @@ export interface UpdateCourseData {
  */
 export async function getCourses(filters?: CourseFilters): Promise<Course[]> {
   const params = new URLSearchParams();
-  
+
   if (filters?.category) params.append('category', filters.category);
   if (filters?.level) params.append('level', filters.level);
   if (filters?.search) params.append('search', filters.search);
   if (filters?.instructor) params.append('instructor', filters.instructor);
   if (filters?.published !== undefined) params.append('published', String(filters.published));
+  if (filters?.medium) params.append('medium', filters.medium);
 
   const url = `${API_BASE_URL}/api/courses${params.toString() ? `?${params}` : ''}`;
-  
+
   const response = await fetch(url, {
     method: 'GET',
     credentials: 'include',
