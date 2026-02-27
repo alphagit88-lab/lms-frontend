@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Booking,
   CancellationPolicy,
@@ -58,8 +59,8 @@ export default function CancelBookingModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  const modalContent = (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
@@ -116,21 +117,19 @@ export default function CancelBookingModal({
               {policyError}
             </div>
           ) : policy ? (
-            <div className={`rounded-lg border p-4 ${
-              policy.refundPercentage === 100
+            <div className={`rounded-lg border p-4 ${policy.refundPercentage === 100
                 ? 'bg-green-50 border-green-200'
                 : policy.refundPercentage === 50
-                ? 'bg-amber-50 border-amber-200'
-                : 'bg-red-50 border-red-200'
-            }`}>
+                  ? 'bg-amber-50 border-amber-200'
+                  : 'bg-red-50 border-red-200'
+              }`}>
               <div className="flex items-start gap-3">
-                <div className={`mt-0.5 flex-shrink-0 ${
-                  policy.refundPercentage === 100
+                <div className={`mt-0.5 flex-shrink-0 ${policy.refundPercentage === 100
                     ? 'text-green-600'
                     : policy.refundPercentage === 50
-                    ? 'text-amber-600'
-                    : 'text-red-600'
-                }`}>
+                      ? 'text-amber-600'
+                      : 'text-red-600'
+                  }`}>
                   {policy.refundPercentage === 100 ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -146,22 +145,20 @@ export default function CancelBookingModal({
                   )}
                 </div>
                 <div className="flex-1">
-                  <h4 className={`text-sm font-semibold ${
-                    policy.refundPercentage === 100
+                  <h4 className={`text-sm font-semibold ${policy.refundPercentage === 100
                       ? 'text-green-800'
                       : policy.refundPercentage === 50
-                      ? 'text-amber-800'
-                      : 'text-red-800'
-                  }`}>
+                        ? 'text-amber-800'
+                        : 'text-red-800'
+                    }`}>
                     Refund Policy: {policy.refundPercentage}% Refund
                   </h4>
-                  <p className={`text-xs mt-1 ${
-                    policy.refundPercentage === 100
+                  <p className={`text-xs mt-1 ${policy.refundPercentage === 100
                       ? 'text-green-700'
                       : policy.refundPercentage === 50
-                      ? 'text-amber-700'
-                      : 'text-red-700'
-                  }`}>
+                        ? 'text-amber-700'
+                        : 'text-red-700'
+                    }`}>
                     {policy.policyDescription}
                   </p>
                   {policy.amount > 0 && (
@@ -240,5 +237,9 @@ export default function CancelBookingModal({
       </div>
     </div>
   );
+
+  if (typeof window === 'undefined') return null;
+
+  return createPortal(modalContent, document.body);
 }
 

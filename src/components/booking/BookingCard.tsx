@@ -51,13 +51,12 @@ export default function BookingCard({
 
   return (
     <div
-      className={`bg-white rounded-lg border p-4 sm:p-5 transition ${
-        booking.status === 'pending'
+      className={`bg-white rounded-lg border p-4 sm:p-5 transition ${booking.status === 'pending'
           ? 'border-amber-200 shadow-sm'
           : booking.status === 'confirmed' && isToday
-          ? 'border-green-300 shadow-sm ring-1 ring-green-100'
-          : 'border-gray-200'
-      }`}
+            ? 'border-green-300 shadow-sm ring-1 ring-green-100'
+            : 'border-gray-200'
+        }`}
     >
       <div className="flex flex-col sm:flex-row sm:items-start gap-4">
         {/* Left: Student Info + Session Details */}
@@ -88,8 +87,7 @@ export default function BookingCard({
             </span>
           </div>
 
-          {/* Session details grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
             {/* Date */}
             <div className="flex items-center gap-2 text-gray-600">
               <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
