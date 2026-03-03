@@ -222,6 +222,52 @@ export default function CourseDetailPage() {
               </div>
             </section>
           )}
+
+          {/* Exams */}
+          {course.exams && course.exams.length > 0 && (
+            <section className="mb-8">
+              <h2 className="text-lg font-bold text-slate-900 mb-4">Exams & Assessments</h2>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                {course.exams
+                  .filter(exam => exam.isPublished || isInstructor)
+                  .map((exam, index) => (
+                    <div
+                      key={exam.id}
+                      className="flex items-center justify-between p-4 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition"
+                    >
+                      <div className="flex items-center flex-1">
+                        <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-slate-900 text-sm">{exam.title}</div>
+                          <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
+                            {exam.durationMinutes > 0 ? `${exam.durationMinutes} min` : 'Untimed'} • {exam.totalMarks} Marks
+                            <span className="inline-block w-1 h-1 bg-slate-300 rounded-full" />
+                            {exam.examType.toUpperCase().replace('_', ' ')}
+                          </div>
+                        </div>
+                      </div>
+
+                      {course.isEnrolled && exam.isPublished ? (
+                        <Link
+                          href={`/exams/${exam.id}/take`}
+                          className="text-xs bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-blue-700 hover:-translate-y-0.5 transition-all shadow-blue-600/20"
+                        >
+                          Take Exam
+                        </Link>
+                      ) : isInstructor ? (
+                        <span className="text-xs bg-gray-100 text-gray-600 border border-gray-200 px-3 py-1 rounded-full font-medium ml-2">
+                          {exam.isPublished ? 'Published' : 'Draft'}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400 bg-slate-50 px-3 py-1 rounded-full border border-slate-100 font-medium">Enrolled Students Only</span>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            </section>
+          )}
         </div>
 
         {/* Right: Enrollment Card */}
