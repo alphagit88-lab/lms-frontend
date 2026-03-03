@@ -56,7 +56,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-blue-600 via-blue-700 to-indigo-800 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-60" />
         <div className="relative flex flex-col justify-center items-center w-full p-12 text-white">
           <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-8">
@@ -88,7 +88,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex justify-center mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-linear-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
               <span className="text-white text-xl font-bold">L</span>
             </div>
           </div>
@@ -105,7 +105,7 @@ export default function LoginPage() {
           <div className="space-y-6">
             {error && (
               <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
-                <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <p className="text-sm text-red-700">{error}</p>
@@ -182,10 +182,10 @@ export default function LoginPage() {
                 Demo Credentials
               </p>
               <div className="grid grid-cols-1 gap-1.5 text-xs text-slate-500">
-                <div className="flex justify-between"><span className="font-medium text-slate-600">Admin</span><span>admin@lms.com / Admin@123</span></div>
-                <div className="flex justify-between"><span className="font-medium text-slate-600">Instructor</span><span>jason1@gmail.com /Ja111111@</span></div>
-                <div className="flex justify-between"><span className="font-medium text-slate-600">Student</span><span>chanjaystu1@gmail.com/Ch11111@</span></div>
-                <div className="flex justify-between"><span className="font-medium text-slate-600">Parent</span><span>parent@lms.com/Parent@123</span></div>
+                <div className="flex justify-between"><span className="font-medium text-slate-600">Admin</span><span>admin@lms.com / Test@1234</span></div>
+                <div className="flex justify-between"><span className="font-medium text-slate-600">Instructor</span><span>john.doe@lms.com / Test@1234</span></div>
+                <div className="flex justify-between"><span className="font-medium text-slate-600">Student</span><span>jane.smith@lms.com / Test@1234</span></div>
+                <div className="flex justify-between"><span className="font-medium text-slate-600">Parent</span><span>kamala.perera@lms.com / Test@1234</span></div>
               </div>
             </div>
 
