@@ -76,7 +76,7 @@ export default function InstructorExamsPage() {
                             </div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">No exams found</h3>
                             <p className="text-gray-500 max-w-sm mb-6">
-                                You haven't created any exams or assessments yet. Create your first exam to evaluate your students.
+                                You haven&apos;t created any exams or assessments yet. Create your first exam to evaluate your students.
                             </p>
                             <Link
                                 href="/instructor/exams/create"
