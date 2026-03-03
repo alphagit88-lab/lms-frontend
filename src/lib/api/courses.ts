@@ -47,8 +47,23 @@ export interface Course {
   instructor?: Instructor;
   category?: Category;
   lessons?: Lesson[];
+  exams?: any[];
   isEnrolled?: boolean;
   medium?: 'english' | 'sinhala' | 'tamil' | string;
+}
+
+export interface Exam {
+  id: string;
+  courseId: string;
+  title: string;
+  slug: string;
+  description?: string;
+  totalQuestions: number;
+  passingScore: number;
+  duration?: number;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Lesson {
