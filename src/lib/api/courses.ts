@@ -47,7 +47,7 @@ export interface Course {
   instructor?: Instructor;
   category?: Category;
   lessons?: Lesson[];
-  exams?: any[];
+  exams?: Exam[];
   isEnrolled?: boolean;
   medium?: 'english' | 'sinhala' | 'tamil' | string;
 }
