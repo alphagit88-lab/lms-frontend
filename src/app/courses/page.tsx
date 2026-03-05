@@ -5,13 +5,26 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import { getCourses, getCategories, Course, Category, CourseFilters } from '@/lib/api/courses';
+import { useAuth } from '@/contexts/AuthContext';
+import { getMyEnrollments, bulkEnrollInCourses, enrollInCourse } from '@/lib/api/enrollments';
 
 export default function CoursesPage() {
   const router = useRouter();
+  const { user } = useAuth();
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Enrolled course IDs for current user
+  const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
+
+  // Multi-select state
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollMessage, setEnrollMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,7 +35,17 @@ export default function CoursesPage() {
   useEffect(() => {
     loadCourses();
     loadCategories();
-  }, []);
+    if (user) loadMyEnrollments();
+  }, [user]);
+
+  const loadMyEnrollments = async () => {
+    try {
+      const enrollments = await getMyEnrollments();
+      setEnrolledIds(new Set(enrollments.map((e) => e.courseId)));
+    } catch {
+      // silently fail – enrollment status is non-critical for listing
+    }
+  };
 
   const loadCategories = async () => {
     try {
@@ -64,6 +87,82 @@ export default function CoursesPage() {
     loadCourses({ published: true });
   };
 
+  // ── Multi-select helpers ──────────────────────────────────────────────────
+
+  const toggleSelectionMode = () => {
+    setSelectionMode((prev) => !prev);
+    setSelectedIds(new Set());
+    setEnrollMessage(null);
+  };
+
+  const toggleCourseSelection = (courseId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(courseId)) {
+        next.delete(courseId);
+      } else {
+        next.add(courseId);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    const enrollable = courses.filter((c) => !enrolledIds.has(c.id)).map((c) => c.id);
+    setSelectedIds(new Set(enrollable));
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const handleBulkEnroll = async () => {
+    if (!user) {
+      router.push('/login?redirect=/courses');
+      return;
+    }
+    if (selectedIds.size === 0) return;
+    setEnrolling(true);
+    setEnrollMessage(null);
+    try {
+      const result = await bulkEnrollInCourses(Array.from(selectedIds));
+      const { enrolled, alreadyEnrolled, failed } = result.summary;
+      const newEnrolled = result.results.filter((r) => r.status === 'enrolled').map((r) => r.courseId);
+      setEnrolledIds((prev) => {
+        const next = new Set(prev);
+        newEnrolled.forEach((id) => next.add(id));
+        return next;
+      });
+      let msg = '';
+      if (enrolled > 0) msg += `${enrolled} course${enrolled > 1 ? 's' : ''} enrolled. `;
+      if (alreadyEnrolled > 0) msg += `${alreadyEnrolled} already enrolled. `;
+      if (failed > 0) msg += `${failed} failed.`;
+      setEnrollMessage({ type: enrolled > 0 ? 'success' : 'error', text: msg.trim() });
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Bulk enrollment failed';
+      setEnrollMessage({ type: 'error', text: msg });
+    } finally {
+      setEnrolling(false);
+    }
+  };
+
+  const handleQuickEnroll = async (e: React.MouseEvent, courseId: string) => {
+    e.preventDefault();
+    if (!user) {
+      router.push('/login?redirect=/courses');
+      return;
+    }
+    try {
+      await enrollInCourse(courseId);
+      setEnrolledIds((prev) => new Set([...prev, courseId]));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Enrollment failed';
+      setEnrollMessage({ type: 'error', text: msg });
+    }
+  };
+
+  const selectableCount = courses.filter((c) => !enrolledIds.has(c.id)).length;
+
   const formatPrice = (price: number | string | undefined) => {
     const numPrice = Number(price || 0);
     return numPrice === 0 ? 'Free' : `$${numPrice.toFixed(2)}`;
@@ -85,10 +184,66 @@ export default function CoursesPage() {
   return (
     <AppLayout>
       {/* Header */}
-      <div className="mb-10">
-        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Browse Courses</h1>
-        <p className="text-slate-500 font-medium mt-1">Explore our wide range of courses and start learning today</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Browse Courses</h1>
+          <p className="text-slate-500 font-medium mt-1">Explore our wide range of courses and start learning today</p>
+        </div>
+        {user && (
+          <button
+            onClick={toggleSelectionMode}
+            className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
+              selectionMode
+                ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            {selectionMode ? '✕ Cancel Selection' : '☑ Select Multiple Courses'}
+          </button>
+        )}
       </div>
+
+      {/* Enrollment feedback */}
+      {enrollMessage && (
+        <div
+          className={`mb-4 px-4 py-3 rounded-xl text-sm font-medium border ${
+            enrollMessage.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+              : 'bg-red-50 border-red-200 text-red-700'
+          }`}
+        >
+          {enrollMessage.text}
+          <button onClick={() => setEnrollMessage(null)} className="ml-3 text-xs underline opacity-70 hover:opacity-100">Dismiss</button>
+        </div>
+      )}
+
+      {/* Sticky selection toolbar */}
+      {selectionMode && (
+        <div className="sticky top-4 z-30 bg-white border border-blue-200 rounded-xl shadow-lg px-5 py-3 mb-5 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-3 flex-1">
+            <span className="text-sm font-semibold text-slate-800">
+              {selectedIds.size} course{selectedIds.size !== 1 ? 's' : ''} selected
+            </span>
+            <button onClick={selectAll} disabled={selectedIds.size === selectableCount} className="text-xs text-blue-600 hover:underline disabled:opacity-40">
+              Select all ({selectableCount})
+            </button>
+            {selectedIds.size > 0 && (
+              <button onClick={clearSelection} className="text-xs text-slate-500 hover:underline">Clear</button>
+            )}
+          </div>
+          <button
+            onClick={handleBulkEnroll}
+            disabled={selectedIds.size === 0 || enrolling}
+            className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
+          >
+            {enrolling ? (
+              <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8z" /></svg>Enrolling…</>
+            ) : (
+              `Enroll in ${selectedIds.size} Course${selectedIds.size !== 1 ? 's' : ''}`
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-6">
@@ -209,70 +364,131 @@ export default function CoursesPage() {
         <>
           <div className="mb-4 text-sm text-slate-500">
             Found {courses.length} course{courses.length !== 1 ? 's' : ''}
+            {selectionMode && (
+              <span className="ml-2 text-blue-600 font-medium">— Click cards to select</span>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {courses.map((course) => (
-              <Link
-                key={course.id}
-                href={`/courses/${course.id}`}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-slate-200 group"
-              >
-                {/* Thumbnail */}
-                <div className="aspect-video bg-gradient-to-br from-slate-100 to-slate-200 relative">
-                  {course.thumbnail ? (
-                    <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.206 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.794 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.794 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.206 18 16.5 18s-3.332.477-4.5 1.253" />
-                      </svg>
-                    </div>
-                  )}
-                  <div className="absolute top-2 right-2 flex gap-1.5">
-                    {course.medium && (
-                      <span className="px-2 py-1 text-xs font-medium rounded-full border bg-blue-50 text-blue-700 border-blue-200 capitalize">
-                        {course.medium}
-                      </span>
-                    )}
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getLevelBadgeColor(course.level)}`}>
-                      {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
-                    </span>
-                  </div>
-                </div>
+            {courses.map((course) => {
+              const isEnrolled = enrolledIds.has(course.id);
+              const isSelected = selectedIds.has(course.id);
+              const isFree = Number(course.price || 0) === 0;
 
-                <div className="p-5">
-                  {course.category && (
-                    <div className="text-xs text-blue-600 font-medium mb-1.5">{course.category.name}</div>
-                  )}
-                  <h3 className="text-base font-semibold text-slate-900 mb-1.5 line-clamp-2 group-hover:text-blue-700 transition">
-                    {course.title}
-                  </h3>
-                  <p className="text-sm text-slate-500 mb-4 line-clamp-2">
-                    {course.shortDescription || course.description}
-                  </p>
-
-                  {course.instructor && (
-                    <div className="flex items-center mb-4 text-sm text-slate-500">
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-xs font-bold text-blue-700 mr-2">
-                        {course.instructor.firstName?.[0]}
+              const cardContent = (
+                <div
+                  className={`bg-white rounded-xl shadow-sm overflow-hidden border transition group relative ${
+                    selectionMode
+                      ? isEnrolled
+                        ? 'border-slate-200 opacity-60 cursor-default'
+                        : isSelected
+                        ? 'border-blue-500 ring-2 ring-blue-400 cursor-pointer'
+                        : 'border-slate-200 hover:border-blue-300 cursor-pointer'
+                      : 'border-slate-200 hover:shadow-md'
+                  }`}
+                  onClick={selectionMode && !isEnrolled ? () => toggleCourseSelection(course.id) : undefined}
+                >
+                  {/* Selection checkbox */}
+                  {selectionMode && !isEnrolled && (
+                    <div className="absolute top-3 left-3 z-10">
+                      <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition ${
+                        isSelected ? 'bg-blue-600 border-blue-600' : 'bg-white/90 border-slate-400'
+                      }`}>
+                        {isSelected && (
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
                       </div>
-                      <span>{course.instructor.firstName} {course.instructor.lastName}</span>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                    <div className="text-lg font-bold text-slate-900">{formatPrice(course.price)}</div>
-                    <div className="flex items-center text-sm text-slate-400">
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      {course.enrollmentCount}
+                  {/* Already-enrolled badge */}
+                  {isEnrolled && (
+                    <div className="absolute top-3 left-3 z-10">
+                      <span className="px-2.5 py-1 bg-emerald-500 text-white text-[10px] font-semibold rounded-full shadow">Enrolled</span>
+                    </div>
+                  )}
+
+                  {/* Thumbnail */}
+                  <div className="aspect-video bg-linear-to-br from-slate-100 to-slate-200 relative">
+                    {course.thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.206 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.794 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.794 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.206 18 16.5 18s-3.332.477-4.5 1.253" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2 flex gap-1.5">
+                      {course.medium && (
+                        <span className="px-2 py-1 text-xs font-medium rounded-full border bg-blue-50 text-blue-700 border-blue-200 capitalize">
+                          {course.medium}
+                        </span>
+                      )}
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getLevelBadgeColor(course.level)}`}>
+                        {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+                    {course.category && (
+                      <div className="text-xs text-blue-600 font-medium mb-1.5">{course.category.name}</div>
+                    )}
+                    <h3 className="text-base font-semibold text-slate-900 mb-1.5 line-clamp-2 group-hover:text-blue-700 transition">
+                      {course.title}
+                    </h3>
+                    <p className="text-sm text-slate-500 mb-4 line-clamp-2">
+                      {course.shortDescription || course.description}
+                    </p>
+
+                    {course.instructor && (
+                      <div className="flex items-center mb-4 text-sm text-slate-500">
+                        <div className="w-6 h-6 rounded-full bg-linear-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-xs font-bold text-blue-700 mr-2">
+                          {course.instructor.firstName?.[0]}
+                        </div>
+                        <span>{course.instructor.firstName} {course.instructor.lastName}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                      <div className="text-lg font-bold text-slate-900">{formatPrice(course.price)}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center text-sm text-slate-400">
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {course.enrollmentCount}
+                        </span>
+                        {!selectionMode && user && isFree && !isEnrolled && (
+                          <button
+                            onClick={(e) => handleQuickEnroll(e, course.id)}
+                            className="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition"
+                          >
+                            Enroll Free
+                          </button>
+                        )}
+                        {!selectionMode && isEnrolled && (
+                          <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg">Enrolled</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </Link>
-            ))}
+              );
+
+              if (selectionMode) {
+                return <div key={course.id}>{cardContent}</div>;
+              }
+              return (
+                <Link key={course.id} href={`/courses/${course.id}`} className="block">
+                  {cardContent}
+                </Link>
+              );
+            })}
           </div>
         </>
       )}

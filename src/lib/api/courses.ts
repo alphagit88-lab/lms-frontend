@@ -56,12 +56,17 @@ export interface Exam {
   id: string;
   courseId: string;
   title: string;
-  slug: string;
+  slug?: string;
   description?: string;
+  examType: 'quiz' | 'assignment' | 'test' | 'final_exam' | 'practice';
   totalQuestions: number;
-  passingScore: number;
+  totalMarks: number;
+  passingMarks?: number;
+  passingScore?: number;
+  durationMinutes?: number;
   duration?: number;
   isPublished: boolean;
+  maxAttempts?: number;
   createdAt: string;
   updatedAt: string;
 }
