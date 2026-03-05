@@ -104,7 +104,7 @@ export const ExamBuilder = () => {
 
         try {
             setSaving(true);
-            let payload = { ...questionData, orderIndex: questions.length };
+            const payload = { ...questionData, orderIndex: questions.length };
 
             // Clean options if Essay
             if (payload.questionType === 'essay') {
@@ -204,6 +204,38 @@ export const ExamBuilder = () => {
                                 type="number"
                                 value={examData.durationMinutes}
                                 onChange={e => setExamData({ ...examData, durationMinutes: parseInt(e.target.value) || 0 })}
+                                className="w-full border-gray-200 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 border"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Exam Language</label>
+                            <select
+                                value={examData.language || 'english'}
+                                onChange={e => setExamData({ ...examData, language: e.target.value })}
+                                className="w-full border-gray-200 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 border"
+                            >
+                                <option value="english">English</option>
+                                <option value="sinhala">සිංහල (Sinhala)</option>
+                                <option value="tamil">தமிழ் (Tamil)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Passing Marks</label>
+                            <input
+                                type="number"
+                                value={examData.passingMarks || ''}
+                                onChange={e => setExamData({ ...examData, passingMarks: parseInt(e.target.value) || undefined })}
+                                placeholder="Optional"
+                                className="w-full border-gray-200 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 border"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Max Attempts</label>
+                            <input
+                                type="number"
+                                min={1}
+                                value={examData.maxAttempts || 1}
+                                onChange={e => setExamData({ ...examData, maxAttempts: parseInt(e.target.value) || 1 })}
                                 className="w-full border-gray-200 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 border"
                             />
                         </div>

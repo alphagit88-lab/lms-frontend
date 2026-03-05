@@ -65,6 +65,51 @@ export interface CreateQuestionPayload {
     }[];
 }
 
+export interface StudentAvailableExam {
+    id: string;
+    courseId: string;
+    title: string;
+    description?: string;
+    examType: string;
+    examDate?: string;
+    durationMinutes?: number;
+    totalMarks: number;
+    passingMarks?: number;
+    language?: string;
+    maxAttempts: number;
+    showCorrectAnswers: boolean;
+    createdAt: string;
+    questionCount: number;
+    course: { id: string; title: string } | null;
+    submission: {
+        latestStatus: 'draft' | 'submitted' | 'graded' | 'returned';
+        attemptCount: number;
+        latestMarks: number | null;
+    } | null;
+}
+
+export interface ExamStats {
+    examId: string;
+    totalMarks: number;
+    passingMarks: number | null;
+    totalSubmissions: number;
+    gradedCount: number;
+    pendingGradingCount: number;
+    averageScore: number;
+    passCount: number | null;
+    failCount: number | null;
+    passRate: number | null;
+    recentStudents: Array<{
+        studentId: string;
+        studentName: string;
+        status: string;
+        marksAwarded: number | null;
+        attemptNumber: number;
+        submittedAt: string;
+        submissionId: string;
+    }>;
+}
+
 const fetchWithData = async (url: string, options: RequestInit = {}) => {
     const res = await fetch(`${API_BASE_URL}${url}`, {
         ...options,
@@ -136,5 +181,16 @@ export const examApi = {
 
     deleteQuestion: async (id: string): Promise<void> => {
         await fetchWithData(`/api/questions/${id}`, { method: 'DELETE' });
+    },
+
+    // Student: get all published exams across enrolled courses with submission status
+    getStudentAvailableExams: async (): Promise<StudentAvailableExam[]> => {
+        const data = await fetchWithData('/api/exams/student/available');
+        return data.exams;
+    },
+
+    // Instructor: get aggregate stats for an exam
+    getExamStats: async (id: string): Promise<ExamStats> => {
+        return await fetchWithData(`/api/exams/${id}/stats`);
     },
 };
