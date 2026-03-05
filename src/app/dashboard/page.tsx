@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -141,9 +142,11 @@ export default function DashboardPage() {
               <div className="flex items-center gap-10 flex-1 min-w-0">
                 <div className="hidden sm:block flex-shrink-0 relative">
                   {profilePicUrl ? (
-                    <img
+                    <Image
                       src={profilePicUrl}
                       alt="Profile"
+                      width={96}
+                      height={96}
                       className="w-24 h-24 rounded-3xl border-2 border-white/20 object-cover shadow-2xl relative z-10"
                     />
                   ) : (
@@ -218,7 +221,9 @@ export default function DashboardPage() {
                 <ActionCard icon={icons.clock} title="Set Availability" description="Manage your teaching hours and slots" onClick={() => router.push('/instructor/availability')} gradient="bg-slate-50" />
                 <ActionCard icon={icons.play} title="Live Classroom" description="Start instant live interactive sessions" onClick={() => router.push('/instructor/sessions')} gradient="bg-slate-50" />
                 <ActionCard icon={icons.plus} title="New Course" description="Design and publish elite curriculum" onClick={() => router.push('/instructor/courses/create')} gradient="bg-slate-50" />
-                <ActionCard icon={icons.upload} title="Assets" description="Manage PDFs, videos, and handouts" onClick={() => router.push('/instructor/content')} gradient="bg-slate-50" />
+                <ActionCard icon={icons.upload} title="Content Library" description="Manage PDFs, videos, and handouts" onClick={() => router.push('/instructor/content')} gradient="bg-slate-50" />
+                <ActionCard icon={icons.eye} title="Exams & Assessments" description="Create, grade, and publish exam scores" onClick={() => router.push('/instructor/exams')} gradient="bg-slate-50" />
+                <ActionCard icon={icons.chart} title="Instructor Hub" description="Full instructor dashboard overview" onClick={() => router.push('/instructor/dashboard')} gradient="bg-slate-50" />
               </div>
             </section>
           </div>

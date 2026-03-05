@@ -260,7 +260,7 @@ function EditCourseContent() {
             <label htmlFor="slug" className="block text-sm font-medium text-slate-700 mb-1.5">
               Course Slug <span className="text-red-500">*</span>
             </label>
-            <input type="text" id="slug" name="slug" value={formData.slug} onChange={handleChange} required pattern="[a-z0-9-]+" className={inputClasses} />
+            <input type="text" id="slug" name="slug" value={formData.slug} onChange={handleChange} required pattern="[a-z0-9\-]+" className={inputClasses} />
             <p className="mt-1 text-xs text-slate-400">URL-friendly version</p>
           </div>
 

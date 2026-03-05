@@ -40,10 +40,11 @@ export default function TakeExamPage() {
                 const h = await submissionApi.getSubmissionHistory(examId);
                 setHistory(h);
 
-            } catch (err: any) {
+            } catch (err) {
                 console.error(err);
-                if (err?.response?.status === 403) {
-                    alert(err.response.data.error || "Cannot access exam.");
+                const error = err as { response?: { status: number; data: { error: string } } };
+                if (error?.response?.status === 403) {
+                    alert(error.response.data.error || "Cannot access exam.");
                 } else {
                     alert("Failed to load exam.");
                 }
@@ -115,6 +116,26 @@ export default function TakeExamPage() {
         return () => clearInterval(timer);
     }, [started, timeLeft]);
 
+    // Auto-save draft every 30 seconds
+    const [lastSaved, setLastSaved] = useState<string | null>(null);
+    useEffect(() => {
+        if (!started || !exam) return;
+
+        const autoSave = setInterval(async () => {
+            try {
+                const ansArray = Object.values(answers);
+                if (ansArray.length > 0) {
+                    const result = await submissionApi.saveDraft(examId, ansArray);
+                    setLastSaved(new Date().toLocaleTimeString());
+                }
+            } catch (err) {
+                console.warn('Auto-save failed:', err);
+            }
+        }, 30000); // Every 30 seconds
+
+        return () => clearInterval(autoSave);
+    }, [started, exam, answers, examId]);
+
     const handleAnswerChange = (questionId: string, val: string) => {
         setAnswers(prev => ({
             ...prev,
@@ -140,8 +161,9 @@ export default function TakeExamPage() {
                     uploadUrl: res.uploadUrl
                 }
             }));
-        } catch (err: any) {
-            alert(err.message || 'Failed to upload image. Please try again.');
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to upload image. Please try again.';
+            alert(errorMessage);
         } finally {
             setUploading(prev => ({ ...prev, [questionId]: false }));
             e.target.value = ''; // Reset input
@@ -225,13 +247,23 @@ export default function TakeExamPage() {
                                                 <div className="font-bold text-gray-900">Attempt {h.attemptNumber}</div>
                                                 <div className="text-sm text-gray-500">{new Date(h.submittedAt).toLocaleString()}</div>
                                             </div>
-                                            <div className="text-right">
-                                                <div className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-700 uppercase">
-                                                    {h.status}
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-right">
+                                                    <div className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-700 uppercase">
+                                                        {h.status}
+                                                    </div>
+                                                    <div className="font-bold text-blue-600 mt-1">
+                                                        {h.status === 'graded' ? `${h.marksAwarded} / ${exam.totalMarks}` : 'Pending Grade'}
+                                                    </div>
                                                 </div>
-                                                <div className="font-bold text-blue-600 mt-1">
-                                                    {h.status === 'graded' ? `${h.marksAwarded} / ${exam.totalMarks}` : 'Pending Grade'}
-                                                </div>
+                                                {h.status === 'graded' && (
+                                                    <a
+                                                        href={`/exams/${examId}/results`}
+                                                        className="px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                                                    >
+                                                        View Results
+                                                    </a>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -264,6 +296,9 @@ export default function TakeExamPage() {
                             <Clock className="w-5 h-5" />
                             {formatTime(timeLeft)}
                         </div>
+                    )}
+                    {lastSaved && (
+                        <span className="text-xs text-gray-400 hidden md:inline">Auto-saved {lastSaved}</span>
                     )}
                     <button
                         onClick={() => {
@@ -366,7 +401,7 @@ export default function TakeExamPage() {
 
                                         <div className="p-4 bg-yellow-50 rounded-lg text-sm text-yellow-800 border border-yellow-200 flex items-start gap-3">
                                             <AlertTriangle className="shrink-0 w-5 h-5 text-yellow-600 mt-0.5" />
-                                            <p>Remember to save your work frequently. You can type "See attached" if you prefer to upload a fully handwritten document.</p>
+                                            <p>Remember to save your work frequently. You can type &quot;See attached&quot; if you prefer to upload a fully handwritten document.</p>
                                         </div>
                                     </div>
                                 ) : (

@@ -7,6 +7,9 @@ import AppLayout from '@/components/layout/AppLayout';
 import {
     PlatformStats,
     AdminUser,
+    AdminPayment,
+    AdminEnrollment,
+    AdminParentLink,
     PendingTeacher,
     getStats,
     getUsers,
@@ -15,9 +18,14 @@ import {
     getPendingTeachers,
     verifyTeacher,
     rejectTeacher,
+    getPayments,
+    getEnrollments,
+    confirmPayment,
+    getParentLinks,
+    removeParentLink,
 } from '@/lib/api/admin';
 
-type Tab = 'overview' | 'users' | 'teachers';
+type Tab = 'overview' | 'users' | 'teachers' | 'payments' | 'enrollments' | 'parents';
 
 export default function AdminPage() {
     const { user, loading: authLoading } = useAuth();
@@ -32,6 +40,9 @@ export default function AdminPage() {
     const [roleFilter, setRoleFilter] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [pendingTeachers, setPendingTeachers] = useState<PendingTeacher[]>([]);
+    const [payments, setPayments] = useState<AdminPayment[]>([]);
+    const [enrollments, setEnrollments] = useState<AdminEnrollment[]>([]);
+    const [parentLinks, setParentLinks] = useState<AdminParentLink[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [error, setError] = useState('');
@@ -46,6 +57,7 @@ export default function AdminPage() {
     // Initial load
     useEffect(() => {
         if (user?.role === 'admin') loadData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     const loadData = async () => {
@@ -84,10 +96,77 @@ export default function AdminPage() {
     );
 
     useEffect(() => {
-        if (activeTab === 'users' && user?.role === 'admin') {
-            loadUsers(1, roleFilter, searchQuery);
-        }
+        if (user?.role !== 'admin') return;
+        if (activeTab === 'users') loadUsers(1, roleFilter, searchQuery);
+        if (activeTab === 'payments') loadPayments(1);
+        if (activeTab === 'enrollments') loadEnrollments(1);
+        if (activeTab === 'parents') loadParentLinks(1);
     }, [activeTab, roleFilter]);
+
+    const loadParentLinks = async (page: number) => {
+        setLoading(true);
+        try {
+            const data = await getParentLinks({ page });
+            setParentLinks(data.links);
+        } catch (err) {
+            setError('Failed to load parent links');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRemoveLink = async (id: string) => {
+        if (!confirm('Remove this link relationship?')) return;
+        setActionLoading(id);
+        try {
+            await removeParentLink(id);
+            setSuccess('Link removed');
+            loadParentLinks(1);
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError('Failed to remove link');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const loadPayments = async (page: number) => {
+        setLoading(true);
+        try {
+            const data = await getPayments({ page });
+            setPayments(data.payments);
+        } catch (err) {
+            setError('Failed to load payments');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadEnrollments = async (page: number) => {
+        setLoading(true);
+        try {
+            const data = await getEnrollments({ page });
+            setEnrollments(data.enrollments);
+        } catch (err) {
+            setError('Failed to load enrollments');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleConfirmPayment = async (id: string) => {
+        setActionLoading(id);
+        try {
+            await confirmPayment(id);
+            setSuccess('Payment confirmed and student enrolled!');
+            loadPayments(1);
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError('Failed to confirm payment');
+        } finally {
+            setActionLoading(null);
+        }
+    };
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -175,9 +254,12 @@ export default function AdminPage() {
     }
 
     const tabs: { key: Tab; label: string; badge?: number }[] = [
-        { key: 'overview', label: 'Admin Overview' },
+        { key: 'overview', label: 'Dashboard Overview' },
         { key: 'users', label: 'Platform Users', badge: stats?.totalUsers },
-        { key: 'teachers', label: 'Teacher Verification', badge: stats?.pendingTeachers },
+        { key: 'teachers', label: 'Instructor Verification', badge: stats?.pendingTeachers },
+        { key: 'payments', label: 'Transactions' },
+        { key: 'enrollments', label: 'Enrollments' },
+        { key: 'parents', label: 'Parent Links' },
     ];
 
     return (
@@ -221,16 +303,16 @@ export default function AdminPage() {
                         key={tab.key}
                         onClick={() => setActiveTab(tab.key)}
                         className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.key
-                                ? 'bg-white text-slate-900 shadow-sm'
-                                : 'text-slate-500 hover:text-slate-700'
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700'
                             }`}
                     >
                         {tab.label}
                         {tab.badge !== undefined && tab.badge > 0 && (
                             <span
                                 className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeTab === tab.key
-                                        ? 'bg-blue-100 text-blue-700'
-                                        : 'bg-slate-200 text-slate-600'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-slate-200 text-slate-600'
                                     }`}
                             >
                                 {tab.badge}
@@ -251,55 +333,68 @@ export default function AdminPage() {
                         <StatCard label="Total Courses" value={stats.totalCourses} icon={<BookIcon />} accent="bg-pink-100 text-pink-600" />
                     </div>
 
-                    {/* Operational Management (Manage other roles tasks) */}
-                    <div>
-                        <div className="flex items-center gap-2 mb-4">
-                            <h3 className="text-base font-bold text-slate-900">Operational Management</h3>
-                            <div className="h-px flex-1 bg-slate-100" />
+                    {/* Separated Role Management */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Instructor Management Section */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                                <TeacherIcon />
+                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Instructor Management</h3>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <ActionCardSmall
+                                    title="Verify Instructors"
+                                    description={`${stats.pendingTeachers} pending review`}
+                                    onClick={() => setActiveTab('teachers')}
+                                    icon={<div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                                />
+                                <ActionCardSmall
+                                    title="Manage Courses"
+                                    description="Review and publish"
+                                    onClick={() => router.push('/instructor/courses')}
+                                />
+                                <ActionCardSmall
+                                    title="Live Classrooms"
+                                    description="Monitor sessions"
+                                    onClick={() => router.push('/instructor/sessions')}
+                                />
+                                <ActionCardSmall
+                                    title="Content Review"
+                                    description="Library assets"
+                                    onClick={() => router.push('/instructor/content')}
+                                />
+                            </div>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            <ActionCardLarge
-                                title="Manage Bookings"
-                                description="Oversee and manage all student-teacher sessions"
-                                icon={<CalendarIcon />}
-                                onClick={() => router.push('/instructor/bookings')}
-                                color="blue"
-                            />
-                            <ActionCardLarge
-                                title="Course Catalog"
-                                description="Manage all published and draft courses"
-                                icon={<BookIcon />}
-                                onClick={() => router.push('/instructor/courses')}
-                                color="indigo"
-                            />
-                            <ActionCardLarge
-                                title="Live Sessions"
-                                description="Monitor ongoing and upcoming live classroom links"
-                                icon={<div className="scale-75"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>}
-                                onClick={() => router.push('/instructor/sessions')}
-                                color="purple"
-                            />
-                            <ActionCardLarge
-                                title="Content Library"
-                                description="Review platform content, PDFs, and resources"
-                                icon={<div className="scale-75"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg></div>}
-                                onClick={() => router.push('/instructor/content')}
-                                color="amber"
-                            />
-                            <ActionCardLarge
-                                title="Session Recordings"
-                                description="Access all cloud-recorded teaching sessions"
-                                icon={<div className="scale-75"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>}
-                                onClick={() => router.push('/instructor/recordings')}
-                                color="rose"
-                            />
-                            <ActionCardLarge
-                                title="Global Availability"
-                                description="Configure platform availability and time slots"
-                                icon={<ClockIcon />}
-                                onClick={() => router.push('/instructor/availability')}
-                                color="emerald"
-                            />
+
+                        {/* Student Management Section */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                                <StudentIcon />
+                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Student Management</h3>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <ActionCardSmall
+                                    title="Oversee Enrollments"
+                                    description="Track participation"
+                                    onClick={() => setActiveTab('enrollments')}
+                                />
+                                <ActionCardSmall
+                                    title="Payment Portal"
+                                    description="Verify transactions"
+                                    onClick={() => setActiveTab('payments')}
+                                />
+                                <ActionCardSmall
+                                    title="Parent Oversight"
+                                    description="Manage family links"
+                                    onClick={() => setActiveTab('parents')}
+                                    icon={<div className="w-1.5 h-1.5 rounded-full bg-violet-400" />}
+                                />
+                                <ActionCardSmall
+                                    title="Platform Users"
+                                    description="Access list & stats"
+                                    onClick={() => setActiveTab('users')}
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -419,8 +514,8 @@ export default function AdminPage() {
                                                 </td>
                                                 <td className="px-5 py-4">
                                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${u.role === 'admin' ? 'bg-slate-900 text-white' :
-                                                            u.role === 'instructor' ? 'bg-emerald-100 text-emerald-700' :
-                                                                u.role === 'parent' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                                                        u.role === 'instructor' ? 'bg-emerald-100 text-emerald-700' :
+                                                            u.role === 'parent' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
                                                         }`}>{u.role}</span>
                                                 </td>
                                                 <td className="px-5 py-4">
@@ -497,14 +592,20 @@ export default function AdminPage() {
 
                                     <div className="flex-1 space-y-4">
                                         <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Background Bio</p>
-                                            <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">{t.bio || 'No biography provided'}</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Qualifications</p>
+                                            <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">{t.qualifications || 'No qualifications provided'}</p>
                                         </div>
 
                                         <div className="flex flex-wrap gap-1.5">
-                                            {t.specializations.map((s, i) => (
-                                                <span key={i} className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded capitalize">{s}</span>
+                                            {t.specialization && (
+                                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded capitalize">{t.specialization}</span>
+                                            )}
+                                            {t.subjects && t.subjects.split(',').map((s, i) => (
+                                                <span key={i} className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold rounded capitalize">{s.trim()}</span>
                                             ))}
+                                            {t.teachingLanguages && (
+                                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded">{t.teachingLanguages}</span>
+                                            )}
                                         </div>
                                     </div>
 
@@ -518,7 +619,139 @@ export default function AdminPage() {
                     )}
                 </div>
             )}
+            {/* ═══════════════ PAYMENTS TAB ═══════════════ */}
+            {activeTab === 'payments' && (
+                <div className="space-y-4">
+                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600">
+                                    <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Student</th>
+                                    <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Course</th>
+                                    <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Amount</th>
+                                    <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Status</th>
+                                    <th className="text-right px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {payments.length === 0 ? (
+                                    <tr><td colSpan={5} className="text-center py-20 text-slate-400">No payment records found</td></tr>
+                                ) : (
+                                    payments.map((p) => (
+                                        <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                                            <td className="px-5 py-4 font-medium">{p.student.firstName} {p.student.lastName}</td>
+                                            <td className="px-5 py-4 text-slate-500">{p.course?.title || 'Account Credit'}</td>
+                                            <td className="px-5 py-4 font-bold text-slate-900">${p.amount}</td>
+                                            <td className="px-5 py-4">
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${p.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{p.status}</span>
+                                            </td>
+                                            <td className="px-5 py-4 text-right">
+                                                {p.status === 'PENDING' && (
+                                                    <button onClick={() => handleConfirmPayment(p.id)} disabled={actionLoading === p.id} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-700">CONFIRM MANUALLY</button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════════════ ENROLLMENTS TAB ═══════════════ */}
+            {activeTab === 'enrollments' && (
+                <div className="space-y-4">
+                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600">
+                                    <th className="text-left px-5 py-4 font-bold">Student</th>
+                                    <th className="text-left px-5 py-4 font-bold">Course</th>
+                                    <th className="text-left px-5 py-4 font-bold">Date</th>
+                                    <th className="text-left px-5 py-4 font-bold">Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {enrollments.length === 0 ? (
+                                    <tr><td colSpan={4} className="text-center py-20 text-slate-400">No enrollment records found</td></tr>
+                                ) : (
+                                    enrollments.map((e) => (
+                                        <tr key={e.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                                            <td className="px-5 py-4 font-medium">{e.student.firstName} {e.student.lastName}</td>
+                                            <td className="px-5 py-4 text-slate-500">{e.course.title}</td>
+                                            <td className="px-5 py-4 text-slate-400 font-mono text-xs">{new Date(e.enrolledAt).toLocaleDateString()}</td>
+                                            <td className="px-5 py-4">
+                                                <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-blue-500" style={{ width: `${e.progress || 0}%` }} />
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+            {/* ═══════════════ PARENTS TAB ═══════════════ */}
+            {activeTab === 'parents' && (
+                <div className="space-y-4">
+                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600">
+                                    <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Parent</th>
+                                    <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Student</th>
+                                    <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Status</th>
+                                    <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Created</th>
+                                    <th className="text-right px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {parentLinks.length === 0 ? (
+                                    <tr><td colSpan={5} className="text-center py-20 text-slate-400">No parent-student links found</td></tr>
+                                ) : (
+                                    parentLinks.map((l) => (
+                                        <tr key={l.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                                            <td className="px-5 py-4">
+                                                <p className="font-medium text-slate-900">{l.parent.firstName} {l.parent.lastName}</p>
+                                                <p className="text-[10px] text-slate-400">{l.parent.email}</p>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <p className="font-medium text-slate-900">{l.student.firstName} {l.student.lastName}</p>
+                                                <p className="text-[10px] text-slate-400">{l.student.email}</p>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${l.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{l.status}</span>
+                                            </td>
+                                            <td className="px-5 py-4 text-slate-400 text-xs">{new Date(l.createdAt).toLocaleDateString()}</td>
+                                            <td className="px-5 py-4 text-right">
+                                                <button onClick={() => handleRemoveLink(l.id)} disabled={actionLoading === l.id} className="p-1.5 text-red-400 hover:text-red-600 transition">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </AppLayout>
+    );
+}
+
+function ActionCardSmall({ title, description, onClick, icon }: { title: string; description: string; onClick: () => void; icon?: React.ReactNode }) {
+    return (
+        <button onClick={onClick} className="flex flex-col p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-300 hover:shadow-md transition-all text-left relative group">
+            <div className="flex items-center justify-between mb-1">
+                <span className="text-[12px] font-bold text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight">{title}</span>
+                {icon}
+            </div>
+            <p className="text-[10px] text-slate-500">{description}</p>
+        </button>
     );
 }
 
@@ -534,35 +767,10 @@ function StatCard({ label, value, icon, accent }: { label: string; value: number
     );
 }
 
-function ActionCardLarge({ title, description, icon, onClick, color }: { title: string; description: string; icon: React.ReactNode; onClick: () => void; color: string }) {
-    const themes: Record<string, string> = {
-        blue: 'bg-blue-600 hover:bg-blue-700 shadow-blue-100',
-        indigo: 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100',
-        purple: 'bg-purple-600 hover:bg-purple-700 shadow-purple-100',
-        rose: 'bg-rose-600 hover:bg-rose-700 shadow-rose-100',
-        emerald: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100',
-        amber: 'bg-amber-600 hover:bg-amber-700 shadow-amber-100',
-    };
-
-    return (
-        <button onClick={onClick} className={`group relative bg-white border border-slate-200 rounded-2xl p-5 text-left hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden`}>
-            <div className={`w-10 h-10 rounded-xl mb-4 flex items-center justify-center transition-all duration-300 ${themes[color]} text-white group-hover:scale-110 shadow-lg`}>
-                {icon}
-            </div>
-            <h4 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors uppercase tracking-tight">{title}</h4>
-            <p className="text-[11px] text-slate-500 leading-normal">{description}</p>
-            <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all">
-                <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7-7 7" /></svg>
-            </div>
-        </button>
-    );
-}
-
 /* ═══════════════ ICONS ═══════════════ */
 function UsersIcon() { return (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>); }
 function StudentIcon() { return (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>); }
 function TeacherIcon() { return (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>); }
 function BookIcon() { return (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>); }
-function CalendarIcon() { return (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>); }
 function ClockIcon() { return (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>); }
 function TrendIcon() { return (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>); }

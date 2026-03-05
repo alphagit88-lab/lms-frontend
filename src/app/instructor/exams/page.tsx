@@ -5,7 +5,7 @@ import { Exam, examApi } from '@/lib/api/exams';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
 import Link from 'next/link';
-import { Plus, Search, FileText, Calendar, Clock, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
+import { Plus, FileText, Calendar, Clock, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function InstructorExamsPage() {

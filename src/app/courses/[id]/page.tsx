@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import AppLayout from '@/components/layout/AppLayout';
 import { getCourseById, Course } from '@/lib/api/courses';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +23,7 @@ export default function CourseDetailPage() {
     if (courseId) {
       loadCourse();
     }
-  }, [courseId]);
+  }, [courseId]); // loadCourse is defined outside effect, dependency not needed
 
   const loadCourse = async () => {
     try {
@@ -230,7 +231,7 @@ export default function CourseDetailPage() {
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 {course.exams
                   .filter(exam => exam.isPublished || isInstructor)
-                  .map((exam, index) => (
+                  .map((exam) => (
                     <div
                       key={exam.id}
                       className="flex items-center justify-between p-4 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition"
@@ -242,7 +243,7 @@ export default function CourseDetailPage() {
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-slate-900 text-sm">{exam.title}</div>
                           <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
-                            {exam.durationMinutes > 0 ? `${exam.durationMinutes} min` : 'Untimed'} • {exam.totalMarks} Marks
+                            {(exam.durationMinutes ?? 0) > 0 ? `${exam.durationMinutes} min` : 'Untimed'} • {exam.totalMarks} Marks
                             <span className="inline-block w-1 h-1 bg-slate-300 rounded-full" />
                             {exam.examType.toUpperCase().replace('_', ' ')}
                           </div>
@@ -274,7 +275,7 @@ export default function CourseDetailPage() {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sticky top-24">
             {course.thumbnail ? (
-              <img src={course.thumbnail} alt={course.title} className="w-full aspect-video object-cover rounded-lg mb-5" />
+              <Image src={course.thumbnail} alt={course.title} width={400} height={225} className="w-full aspect-video object-cover rounded-lg mb-5" />
             ) : (
               <div className="w-full aspect-video bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg mb-5 flex items-center justify-center">
                 <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

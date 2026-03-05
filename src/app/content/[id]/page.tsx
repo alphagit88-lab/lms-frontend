@@ -89,7 +89,7 @@ export default function ContentDetailPage() {
 
   const handlePurchase = () => {
     // TODO: Navigate to payment page when payment system is implemented
-    alert('Payment system coming soon! This content costs $' + content?.price?.toFixed(2));
+    alert('Payment system coming soon! This content costs $' + Number(content?.price ?? 0).toFixed(2));
   };
 
   if (loading) {
@@ -162,7 +162,7 @@ export default function ContentDetailPage() {
                 </span>
                 {content.isPaid ? (
                   <span className="px-3 py-1 bg-green-500/90 backdrop-blur-sm rounded-full text-sm font-bold">
-                    ${content.price?.toFixed(2)}
+                    ${Number(content.price ?? 0).toFixed(2)}
                   </span>
                 ) : (
                   <span className="px-3 py-1 bg-blue-500/90 backdrop-blur-sm rounded-full text-sm font-bold">
@@ -263,7 +263,7 @@ export default function ContentDetailPage() {
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
-                            Purchase for ${content.price?.toFixed(2)}
+                            Purchase for ${Number(content.price ?? 0).toFixed(2)}
                           </button>
                         ) : (
                           <p className="text-sm text-yellow-600">
@@ -371,7 +371,7 @@ export default function ContentDetailPage() {
                     {content.isPaid ? '💰' : '🆓'}
                   </div>
                   <div className="text-lg font-bold text-gray-900">
-                    {content.isPaid ? `$${content.price?.toFixed(2)}` : 'Free'}
+                    {content.isPaid ? `$${Number(content.price ?? 0).toFixed(2)}` : 'Free'}
                   </div>
                   <div className="text-sm text-gray-600">Price</div>
                 </div>
