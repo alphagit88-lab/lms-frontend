@@ -24,7 +24,7 @@ export interface Content {
   fileSize?: number;
   thumbnailUrl?: string;
   isPaid: boolean;
-  price?: number;
+  price?: number | string;  // TypeORM decimal columns are returned as strings at runtime
   isPublished: boolean;
   isDownloadable: boolean;
   downloadCount: number;

@@ -57,10 +57,12 @@ export interface PendingTeacher {
     id: string;
     teacherId: string;
     verified: boolean;
-    bio: string | null;
-    qualifications: string | null;
-    specializations: string[];
-    hourlyRate: number | null;
+    qualifications?: string | null;
+    specialization?: string | null;
+    yearsExperience?: number | null;
+    hourlyRate?: number | null;
+    subjects?: string | null;
+    teachingLanguages?: string | null;
     createdAt: string;
     teacher: {
         id: string;
@@ -68,6 +70,38 @@ export interface PendingTeacher {
         lastName: string;
         email: string;
     };
+}
+
+export interface AdminPayment {
+    id: string;
+    studentId: string;
+    courseId: string | null;
+    amount: number;
+    status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+    transactionId: string | null;
+    createdAt: string;
+    student: { firstName: string; lastName: string; email: string };
+    course: { title: string } | null;
+}
+
+export interface AdminEnrollment {
+    id: string;
+    studentId: string;
+    courseId: string;
+    enrolledAt: string;
+    progress: number;
+    student: { firstName: string; lastName: string; email: string };
+    course: { title: string };
+}
+
+export interface AdminParentLink {
+    id: string;
+    studentId: string;
+    parentId: string;
+    status: 'pending' | 'accepted' | 'rejected';
+    createdAt: string;
+    student: { firstName: string; lastName: string; email: string };
+    parent: { firstName: string; lastName: string; email: string };
 }
 
 /* ── API Functions ─────────────────────────────────── */
@@ -112,4 +146,38 @@ export async function rejectTeacher(teacherId: string, reason?: string): Promise
         method: 'PATCH',
         body: JSON.stringify({ reason }),
     });
+}
+
+export async function getPayments(params?: { page?: number; status?: string }): Promise<{ payments: AdminPayment[], total: number, totalPages: number }> {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.status) qs.set('status', params.status);
+    return apiFetch(`/api/admin/payments${qs.toString() ? `?${qs.toString()}` : ''}`);
+}
+
+export async function getEnrollments(params?: { page?: number }): Promise<{ enrollments: AdminEnrollment[], total: number, totalPages: number }> {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    return apiFetch(`/api/admin/enrollments${qs.toString() ? `?${qs.toString()}` : ''}`);
+}
+
+export async function confirmPayment(paymentId: string): Promise<{ message: string }> {
+    return apiFetch(`/api/payments/${paymentId}/confirm`, { method: 'POST' });
+}
+
+export async function getParentLinks(params?: { page?: number }): Promise<{ links: AdminParentLink[], total: number, totalPages: number }> {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    return apiFetch(`/api/admin/parent-links${qs.toString() ? `?${qs.toString()}` : ''}`);
+}
+
+export async function createParentLink(data: { studentId: string, parentId: string, status?: string }): Promise<{ message: string, link: AdminParentLink }> {
+    return apiFetch('/api/admin/parent-links', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function removeParentLink(linkId: string): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/parent-links/${linkId}`, { method: 'DELETE' });
 }

@@ -65,6 +65,20 @@ export const submissionApi = {
         return data.history;
     },
 
+    saveDraft: async (examId: string, answers: AnswerPayload[]) => {
+        const response = await fetch(`${API_BASE_URL}/api/submissions/exam/${examId}/save-draft`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ answers })
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw Object.assign(new Error(err.error || 'Failed to save draft'), { response: { status: response.status, data: err } });
+        }
+        return await response.json();
+    },
+
     uploadAnswerImage: async (examId: string, questionId: string, file: File) => {
         const formData = new FormData();
         formData.append('file', file);
