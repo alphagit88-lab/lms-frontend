@@ -20,6 +20,8 @@ export default function LoginPage() {
     if (!authLoading && user) {
       if (user.role === 'admin') {
         router.push('/admin');
+      } else if (user.role === 'instructor') {
+        router.push('/instructor/courses');
       } else {
         router.push('/dashboard');
       }
@@ -35,6 +37,8 @@ export default function LoginPage() {
       const user = await login(formData.email, formData.password);
       if (user.role === 'admin') {
         router.push('/admin');
+      } else if (user.role === 'instructor') {
+        router.push('/instructor/courses');
       } else {
         router.push('/dashboard');
       }

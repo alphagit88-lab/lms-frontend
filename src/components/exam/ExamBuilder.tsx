@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { examApi, Exam, Question, CreateExamPayload, CreateQuestionPayload, QuestionOption } from '@/lib/api/exams';
+import { examApi, Exam, Question, CreateExamPayload, CreateQuestionPayload } from '@/lib/api/exams';
 import { getMyCourses, Course } from '@/lib/api/courses';
 import { Plus, Save, Trash2, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 
@@ -85,7 +85,7 @@ export const ExamBuilder = () => {
             setExam(pub);
             alert("Exam published seamlessly! Students can now see it.");
             router.push('/instructor/exams');
-        } catch (err) {
+        } catch {
             alert("Failed to publish.");
         } finally {
             setSaving(false);
@@ -106,14 +106,11 @@ export const ExamBuilder = () => {
             setSaving(true);
             const payload = { ...questionData, orderIndex: questions.length };
 
-            // Clean options if Essay
-            if (payload.questionType === 'essay') {
+            // Clean options if Essay or Short Answer
+            if (payload.questionType === 'essay' || payload.questionType === 'short_answer') {
                 payload.options = [];
             }
 
-            const q = await examApi.createQuestion(exam.id, payload);
-
-            // Reload exam questions cleanly
             const updatedExam = await examApi.getExamById(exam.id);
             if (updatedExam.questions) setQuestions(updatedExam.questions);
 
@@ -141,7 +138,7 @@ export const ExamBuilder = () => {
         try {
             await examApi.deleteQuestion(qId);
             setQuestions(prev => prev.filter(q => q.id !== qId));
-        } catch (err) {
+        } catch {
             alert("Failed to remove question.");
         }
     }
@@ -325,6 +322,7 @@ export const ExamBuilder = () => {
                                 >
                                     <option value="multiple_choice">Multiple Choice (MCQ)</option>
                                     <option value="essay">Written Essay / OCR Upload</option>
+                                    <option value="short_answer">Short Answer</option>
                                 </select>
                             </div>
                             <div>

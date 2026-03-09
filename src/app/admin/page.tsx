@@ -24,8 +24,9 @@ import {
     getParentLinks,
     removeParentLink,
 } from '@/lib/api/admin';
+import { ManualPayment, getPendingManualPayments, reviewManualPayment } from '@/lib/api/payments';
 
-type Tab = 'overview' | 'users' | 'teachers' | 'payments' | 'enrollments' | 'parents';
+type Tab = 'overview' | 'users' | 'teachers' | 'payments' | 'enrollments' | 'parents' | 'manual-payments';
 
 export default function AdminPage() {
     const { user, loading: authLoading } = useAuth();
@@ -43,6 +44,7 @@ export default function AdminPage() {
     const [payments, setPayments] = useState<AdminPayment[]>([]);
     const [enrollments, setEnrollments] = useState<AdminEnrollment[]>([]);
     const [parentLinks, setParentLinks] = useState<AdminParentLink[]>([]);
+    const [manualPayments, setManualPayments] = useState<ManualPayment[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [error, setError] = useState('');
@@ -101,6 +103,7 @@ export default function AdminPage() {
         if (activeTab === 'payments') loadPayments(1);
         if (activeTab === 'enrollments') loadEnrollments(1);
         if (activeTab === 'parents') loadParentLinks(1);
+        if (activeTab === 'manual-payments') loadManualPayments();
     }, [activeTab, roleFilter]);
 
     const loadParentLinks = async (page: number) => {
@@ -151,6 +154,37 @@ export default function AdminPage() {
             setError('Failed to load enrollments');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadManualPayments = async () => {
+        setLoading(true);
+        try {
+            const data = await getPendingManualPayments();
+            setManualPayments(data.payments);
+        } catch (err) {
+            setError('Failed to load manual payments');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReviewManualPayment = async (paymentId: string, action: 'approve' | 'reject') => {
+        let note: string | undefined;
+        if (action === 'reject') {
+            const input = prompt('Reason for rejection (optional):');
+            note = input || undefined;
+        }
+        setActionLoading(paymentId);
+        try {
+            await reviewManualPayment(paymentId, action, note);
+            setSuccess(action === 'approve' ? 'Payment approved — student enrolled!' : 'Payment rejected.');
+            loadManualPayments();
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Review action failed');
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -260,6 +294,7 @@ export default function AdminPage() {
         { key: 'payments', label: 'Transactions' },
         { key: 'enrollments', label: 'Enrollments' },
         { key: 'parents', label: 'Parent Links' },
+        { key: 'manual-payments', label: 'Bank Transfers', badge: manualPayments.filter(p => p.paymentStatus === 'under_review').length },
     ];
 
     return (
@@ -694,6 +729,101 @@ export default function AdminPage() {
                     </div>
                 </div>
             )}
+            {/* ═══════════════ MANUAL PAYMENTS TAB ═══════════════ */}
+            {activeTab === 'manual-payments' && (
+                <div className="space-y-4">
+                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-amber-900">Bank Transfer Review Queue</p>
+                            <p className="text-xs text-amber-700">Students who paid via bank transfer are waiting for enrollment activation.</p>
+                        </div>
+                    </div>
+
+                    {manualPayments.length === 0 ? (
+                        <div className="bg-white border border-slate-200 rounded-3xl p-20 text-center">
+                            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <svg className="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">No Pending Bank Transfers</h3>
+                            <p className="text-slate-500 max-w-sm mx-auto">All bank transfer submissions have been processed.</p>
+                        </div>
+                    ) : (
+                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="bg-slate-50 border-b border-slate-200 text-slate-600">
+                                            <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Student</th>
+                                            <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Amount</th>
+                                            <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Reference</th>
+                                            <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Submitted</th>
+                                            <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Status</th>
+                                            <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Slip</th>
+                                            <th className="text-right px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {manualPayments.map((p) => (
+                                            <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                                                <td className="px-5 py-4">
+                                                    <p className="font-bold text-slate-900">{p.user?.firstName} {p.user?.lastName}</p>
+                                                    <p className="text-[10px] text-slate-400">{p.user?.email}</p>
+                                                </td>
+                                                <td className="px-5 py-4 font-bold text-slate-900">{p.currency} {Number(p.amount).toFixed(2)}</td>
+                                                <td className="px-5 py-4 font-mono text-xs text-slate-500 max-w-[120px] truncate">{p.referenceId || p.id}</td>
+                                                <td className="px-5 py-4 text-slate-400 text-xs">{new Date(p.createdAt).toLocaleDateString()}</td>
+                                                <td className="px-5 py-4">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                                        p.paymentStatus === 'under_review' ? 'bg-amber-100 text-amber-700' :
+                                                        p.paymentStatus === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                                                        p.paymentStatus === 'failed' ? 'bg-red-100 text-red-700' :
+                                                        'bg-slate-100 text-slate-600'
+                                                    }`}>{p.paymentStatus.replace('_', ' ')}</span>
+                                                </td>
+                                                <td className="px-5 py-4">
+                                                    {p.bankSlipUrl ? (
+                                                        <a
+                                                            href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001'}${p.bankSlipUrl}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
+                                                        >
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                            VIEW SLIP
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-[10px] text-slate-400">Not uploaded</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-5 py-4 text-right">
+                                                    {p.paymentStatus === 'under_review' && (
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={() => handleReviewManualPayment(p.id, 'approve')}
+                                                                disabled={actionLoading === p.id}
+                                                                className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-bold hover:bg-emerald-700 transition disabled:opacity-50"
+                                                            >APPROVE</button>
+                                                            <button
+                                                                onClick={() => handleReviewManualPayment(p.id, 'reject')}
+                                                                disabled={actionLoading === p.id}
+                                                                className="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-[10px] font-bold hover:bg-red-50 transition disabled:opacity-50"
+                                                            >REJECT</button>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* ═══════════════ PARENTS TAB ═══════════════ */}
             {activeTab === 'parents' && (
                 <div className="space-y-4">

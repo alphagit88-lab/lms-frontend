@@ -117,3 +117,139 @@ export const getTeacherEarnings = async () => {
     return response.json();
 };
 
+// ─── Bulk course payment ──────────────────────────────────────────────────────
+
+export interface BulkCourseInfo {
+    id: string;
+    title: string;
+    price: number;
+}
+
+/** Response from POST /api/payments/create-bulk-intent */
+export interface BulkPaymentInitResponse {
+    isFree: boolean;
+    paymentId: string;
+    checkoutParams: PayHereCheckoutParams | null;
+    checkoutUrl: string | null;
+    amount: number;
+    courses: BulkCourseInfo[];
+}
+
+export interface BulkPaymentRequest {
+    courseIds: string[];
+    currency?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+}
+
+/**
+ * Initializes a single combined PayHere payment for multiple courses.
+ * Returns checkout params for the combined total.
+ * For all-free selections, isFree=true and courses are enrolled immediately.
+ */
+export const initializeBulkPayment = async (data: BulkPaymentRequest): Promise<BulkPaymentInitResponse> => {
+    const response = await fetch(`${API_BASE_URL}/api/payments/create-bulk-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to initialize bulk payment');
+    }
+
+    return response.json();
+};
+
+// ─── Manual / Bank-Transfer Payment ──────────────────────────────────────────
+
+export interface ManualPayment {
+    id: string;
+    userId: string;
+    amount: number;
+    currency: string;
+    paymentType: string;
+    paymentStatus: string;
+    bankSlipUrl?: string | null;
+    manualReviewNote?: string | null;
+    referenceId: string;
+    metadata?: { courseIds?: string[] } | null;
+    createdAt: string;
+    updatedAt: string;
+    user?: { firstName: string; lastName: string; email: string };
+}
+
+/** POST /api/payments/bank-transfer/create-intent */
+export const initializeBankTransfer = async (data: {
+    type: string;
+    referenceId: string;
+    amount: number;
+    currency?: string;
+    recipientId?: string;
+}): Promise<{ paymentId: string; amount: number }> => {
+    const res = await fetch(`${API_BASE_URL}/api/payments/bank-transfer/create-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Failed to create bank transfer.'); }
+    return res.json();
+};
+
+/** POST /api/payments/bank-transfer/create-bulk-intent */
+export const initializeBulkBankTransfer = async (data: {
+    courseIds: string[];
+    currency?: string;
+}): Promise<{ paymentId: string; amount: number; courses: BulkCourseInfo[] }> => {
+    const res = await fetch(`${API_BASE_URL}/api/payments/bank-transfer/create-bulk-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Failed to create bulk bank transfer.'); }
+    return res.json();
+};
+
+/** POST /api/payments/bank-transfer/:paymentId/upload-slip */
+export const uploadBankSlip = async (paymentId: string, file: File): Promise<{ message: string; payment: ManualPayment }> => {
+    const formData = new FormData();
+    formData.append('slip', file);
+    const res = await fetch(`${API_BASE_URL}/api/payments/bank-transfer/${paymentId}/upload-slip`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Failed to upload bank slip.'); }
+    return res.json();
+};
+
+/** GET /api/payments/bank-transfer/pending */
+export const getPendingManualPayments = async (): Promise<{ payments: ManualPayment[] }> => {
+    const res = await fetch(`${API_BASE_URL}/api/payments/bank-transfer/pending`, {
+        credentials: 'include',
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Failed to fetch manual payments.'); }
+    return res.json();
+};
+
+/** POST /api/payments/bank-transfer/:paymentId/review */
+export const reviewManualPayment = async (
+    paymentId: string,
+    action: 'approve' | 'reject',
+    note?: string
+): Promise<{ message: string; payment: ManualPayment }> => {
+    const res = await fetch(`${API_BASE_URL}/api/payments/bank-transfer/${paymentId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action, note }),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Failed to review payment.'); }
+    return res.json();
+};

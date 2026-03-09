@@ -6,11 +6,14 @@ import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import { getCourses, getCategories, Course, Category, CourseFilters } from '@/lib/api/courses';
 import { useAuth } from '@/contexts/AuthContext';
-import { getMyEnrollments, bulkEnrollInCourses, enrollInCourse } from '@/lib/api/enrollments';
+import { getMyEnrollments, enrollInCourse } from '@/lib/api/enrollments';
 
 export default function CoursesPage() {
   const router = useRouter();
   const { user } = useAuth();
+
+  // Instructors (and admins) can only browse — no enrollment or payment
+  const isStudent = !!(user && user.role !== 'instructor' && user.role !== 'admin');
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -23,7 +26,6 @@ export default function CoursesPage() {
   // Multi-select state
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [enrolling, setEnrolling] = useState(false);
   const [enrollMessage, setEnrollMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Filters
@@ -35,8 +37,8 @@ export default function CoursesPage() {
   useEffect(() => {
     loadCourses();
     loadCategories();
-    if (user) loadMyEnrollments();
-  }, [user]);
+    if (isStudent) loadMyEnrollments();
+  }, [user, isStudent]);
 
   const loadMyEnrollments = async () => {
     try {
@@ -114,50 +116,41 @@ export default function CoursesPage() {
 
   const clearSelection = () => setSelectedIds(new Set());
 
-  const handleBulkEnroll = async () => {
+  const handleBulkEnroll = () => {
     if (!user) {
       router.push('/login?redirect=/courses');
       return;
     }
     if (selectedIds.size === 0) return;
-    setEnrolling(true);
-    setEnrollMessage(null);
-    try {
-      const result = await bulkEnrollInCourses(Array.from(selectedIds));
-      const { enrolled, alreadyEnrolled, failed } = result.summary;
-      const newEnrolled = result.results.filter((r) => r.status === 'enrolled').map((r) => r.courseId);
-      setEnrolledIds((prev) => {
-        const next = new Set(prev);
-        newEnrolled.forEach((id) => next.add(id));
-        return next;
-      });
-      let msg = '';
-      if (enrolled > 0) msg += `${enrolled} course${enrolled > 1 ? 's' : ''} enrolled. `;
-      if (alreadyEnrolled > 0) msg += `${alreadyEnrolled} already enrolled. `;
-      if (failed > 0) msg += `${failed} failed.`;
-      setEnrollMessage({ type: enrolled > 0 ? 'success' : 'error', text: msg.trim() });
-      setSelectedIds(new Set());
-      setSelectionMode(false);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Bulk enrollment failed';
-      setEnrollMessage({ type: 'error', text: msg });
-    } finally {
-      setEnrolling(false);
-    }
+    // Navigate to the bulk checkout page with the selected course IDs
+    const url = `/checkout/bulk?courseIds=${Array.from(selectedIds).join(',')}`;
+    router.push(url);
   };
 
-  const handleQuickEnroll = async (e: React.MouseEvent, courseId: string) => {
+  // Single quick-enroll: free courses enroll immediately; paid courses go to checkout
+  const handleQuickEnroll = async (e: React.MouseEvent, course: Course) => {
     e.preventDefault();
     if (!user) {
       router.push('/login?redirect=/courses');
       return;
     }
-    try {
-      await enrollInCourse(courseId);
-      setEnrolledIds((prev) => new Set([...prev, courseId]));
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Enrollment failed';
-      setEnrollMessage({ type: 'error', text: msg });
+    const isFree = Number(course.price || 0) === 0;
+    if (isFree) {
+      try {
+        await enrollInCourse(course.id);
+        setEnrolledIds((prev) => new Set([...prev, course.id]));
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Enrollment failed';
+        setEnrollMessage({ type: 'error', text: msg });
+      }
+    } else {
+      // Route through payment checkout
+      const checkoutUrl = new URL(window.location.origin + '/checkout');
+      checkoutUrl.searchParams.append('type', 'course_enrollment');
+      checkoutUrl.searchParams.append('referenceId', course.id);
+      checkoutUrl.searchParams.append('price', course.price?.toString() || '0');
+      checkoutUrl.searchParams.append('title', course.title || '');
+      router.push(checkoutUrl.pathname + checkoutUrl.search);
     }
   };
 
@@ -189,7 +182,7 @@ export default function CoursesPage() {
           <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Browse Courses</h1>
           <p className="text-slate-500 font-medium mt-1">Explore our wide range of courses and start learning today</p>
         </div>
-        {user && (
+        {isStudent && (
           <button
             onClick={toggleSelectionMode}
             className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
@@ -233,14 +226,10 @@ export default function CoursesPage() {
           </div>
           <button
             onClick={handleBulkEnroll}
-            disabled={selectedIds.size === 0 || enrolling}
+            disabled={selectedIds.size === 0}
             className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
           >
-            {enrolling ? (
-              <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8z" /></svg>Enrolling…</>
-            ) : (
-              `Enroll in ${selectedIds.size} Course${selectedIds.size !== 1 ? 's' : ''}`
-            )}
+            {`Proceed to Payment (${selectedIds.size} Course${selectedIds.size !== 1 ? 's' : ''})`}
           </button>
         </div>
       )}
@@ -463,15 +452,15 @@ export default function CoursesPage() {
                           </svg>
                           {course.enrollmentCount}
                         </span>
-                        {!selectionMode && user && isFree && !isEnrolled && (
+                        {!selectionMode && isStudent && !isEnrolled && (
                           <button
-                            onClick={(e) => handleQuickEnroll(e, course.id)}
+                            onClick={(e) => handleQuickEnroll(e, course)}
                             className="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition"
                           >
-                            Enroll Free
+                            {isFree ? 'Enroll Free' : 'Buy Now'}
                           </button>
                         )}
-                        {!selectionMode && isEnrolled && (
+                        {!selectionMode && isStudent && isEnrolled && (
                           <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg">Enrolled</span>
                         )}
                       </div>

@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { submissionApi, AnswerPayload, SubmissionHistory } from '@/lib/api/submissions';
 import { Exam } from '@/lib/api/exams';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
-import { Clock, CheckCircle2, ChevronRight, ChevronLeft, AlertTriangle, UploadCloud, X, FileImage } from 'lucide-react';
+import { Clock, ChevronRight, ChevronLeft, AlertTriangle, UploadCloud, X, FileImage } from 'lucide-react';
 
 export default function TakeExamPage() {
     const params = useParams();
@@ -83,14 +83,13 @@ export default function TakeExamPage() {
             // Assume time spent based on difference
             const spent = exam.durationMinutes ? Math.floor(exam.durationMinutes - (timeLeft || 0) / 60) : 0;
 
-            const res = await submissionApi.submitExam(examId, {
+            await submissionApi.submitExam(examId, {
                 answers: ansArray,
                 timeSpentMinutes: spent > 0 ? spent : 1
             });
 
             alert(`Submitted Successfully!`);
-            // Go to a results page or back to courses
-            router.push('/student/my-courses');
+            router.push(`/exams/${examId}/results`);
         } catch (err) {
             console.error(err);
             alert("Failed to deliver submission.");
@@ -125,7 +124,7 @@ export default function TakeExamPage() {
             try {
                 const ansArray = Object.values(answers);
                 if (ansArray.length > 0) {
-                    const result = await submissionApi.saveDraft(examId, ansArray);
+                    await submissionApi.saveDraft(examId, ansArray);
                     setLastSaved(new Date().toLocaleTimeString());
                 }
             } catch (err) {
@@ -316,7 +315,7 @@ export default function TakeExamPage() {
                 {/* Main Content */}
                 <main className="flex-1 max-w-4xl mx-auto w-full p-6 md:p-8">
                     {currentQ && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 min-h-[400px]">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 min-h-100">
                             <div className="flex justify-between items-start mb-6">
                                 <h2 className="text-xl font-medium text-gray-900 leading-relaxed">
                                     <span className="font-bold mr-2">{currentQIndex + 1}.</span>
@@ -331,7 +330,7 @@ export default function TakeExamPage() {
                             <div className="mt-8">
                                 {currentQ.questionType === 'multiple_choice' || currentQ.questionType === 'true_false' ? (
                                     <div className="space-y-3">
-                                        {currentQ.options?.map((opt, i) => {
+                                        {currentQ.options?.map((opt) => {
                                             const isSelected = answers[currentQ.id]?.answerText === opt.id;
                                             return (
                                                 <label
@@ -404,6 +403,14 @@ export default function TakeExamPage() {
                                             <p>Remember to save your work frequently. You can type &quot;See attached&quot; if you prefer to upload a fully handwritten document.</p>
                                         </div>
                                     </div>
+                                ) : currentQ.questionType === 'short_answer' ? (
+                                    <textarea
+                                        value={answers[currentQ.id]?.answerText || ''}
+                                        onChange={(e) => handleAnswerChange(currentQ.id, e.target.value)}
+                                        placeholder="Type your short answer here..."
+                                        rows={4}
+                                        className="w-full border border-gray-300 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-900 resize-y"
+                                    />
                                 ) : (
                                     <div className="text-red-500 italic">Unsupported question type.</div>
                                 )}
