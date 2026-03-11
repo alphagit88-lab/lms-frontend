@@ -50,11 +50,32 @@ const navItems: NavItem[] = [
     roles: ['student'],
   },
   {
+    label: 'Recordings',
+    href: '/recordings',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    roles: ['student'],
+  },
+  {
     label: 'My Exams',
     href: '/exams',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
+    roles: ['student'],
+  },
+  {
+    label: 'My Progress',
+    href: '/student/analytics',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     ),
     roles: ['student'],
@@ -90,21 +111,21 @@ const navItems: NavItem[] = [
     roles: ['instructor'],
   },
   {
-    label: 'Exams & Assessments',
+    label: 'Exams',
     href: '/instructor/exams',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
       </svg>
     ),
     roles: ['instructor'],
   },
   {
-    label: 'Manage Bookings',
-    href: '/instructor/bookings',
+    label: 'Recordings',
+    href: '/instructor/recordings',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.882v6.236a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
       </svg>
     ),
     roles: ['instructor'],
@@ -120,25 +141,24 @@ const navItems: NavItem[] = [
     roles: ['instructor'],
   },
   {
-    label: 'Bank Transfer Slips',
-    href: '/instructor/manual-payments',
+    label: 'Transactions',
+    href: '/instructor/transactions',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
       </svg>
     ),
     roles: ['instructor'],
   },
   {
-    label: 'Settings',
-    href: '/instructor/settings/pricing',
+    label: 'Analytics',
+    href: '/admin/analytics',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     ),
-    roles: ['instructor'],
+    roles: ['admin'],
   },
   {
     label: 'Billing',
@@ -163,8 +183,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
     if (!item.roles) return true;
     return user && item.roles.includes(user.role);
   }).map(item => {
-    if (item.label === 'Dashboard' && user?.role === 'admin') {
-      return { ...item, href: '/admin' };
+    if (user?.role === 'admin') {
+      if (item.label === 'Dashboard') return { ...item, href: '/admin' };
+      if (item.label === 'Browse Courses') return { ...item, href: '/admin/courses' };
     }
     return item;
   });
@@ -221,7 +242,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <div className="p-6 border-t border-slate-100 bg-slate-50/50">
             <Link
               href="/profile"
-              className="flex items-center gap-3 p-4 rounded-2xl hover:bg-white transition shadow-sm hover:shadow-md group mb-3"
+              className="flex items-center justify-center p-3 rounded-2xl hover:bg-white transition shadow-sm hover:shadow-md group mb-3"
             >
               <div className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 border-2 border-white group-hover:border-blue-100 transition overflow-hidden shadow-inner relative">
                 {profilePicUrl ? (
@@ -231,15 +252,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-slate-900 truncate">
-                  {user?.firstName}
-                </p>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Identity Verified</p>
-                </div>
               </div>
             </Link>
             <button
@@ -355,7 +367,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
               <Link
                 href="/profile"
-                className="flex items-center gap-4 p-2 pl-2 pr-5 rounded-[20px] bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-blue-500/5 hover:border-blue-100 transition-all duration-300 group"
+                className="flex items-center justify-center p-2 rounded-[20px] bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-blue-500/5 hover:border-blue-100 transition-all duration-300 group"
               >
                 <div className="w-11 h-11 rounded-[14px] bg-white flex items-center justify-center text-slate-500 border border-slate-100 overflow-hidden shadow-sm group relative">
                   {profilePicUrl ? (
@@ -366,15 +378,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     </div>
                   )}
                   <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full ring-2 ring-emerald-500/20" />
-                </div>
-                <div className="hidden sm:block text-left">
-                  <p className="text-[13px] font-semibold text-slate-900 leading-tight mb-0.5 group-hover:text-blue-600 transition-colors">
-                    {user?.firstName}
-                  </p>
-                  <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-widest flex items-center gap-1.5 opacity-80">
-                    <span className="block w-1 h-1 rounded-full bg-blue-500" />
-                    {user?.role} Account
-                  </p>
                 </div>
               </Link>
 

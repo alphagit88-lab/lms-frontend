@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/layout/AppLayout';
 import { authAPI } from '@/lib/api/auth';
+import PricingSettings from '@/components/instructor/PricingSettings';
 import {
   StudentProfile,
   TeacherProfile,
@@ -525,6 +526,17 @@ export default function ProfilePage() {
                   </button>
                 </div>
               </form>
+            )}
+
+            {/* MONETIZATION SETTINGS — instructor only */}
+            {user?.role === 'instructor' && (
+              <div className="space-y-6">
+                <header className="border-b border-slate-100 pb-6">
+                  <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Monetization Settings</h2>
+                  <p className="text-slate-500 font-medium text-sm mt-1">Set your pricing configuration for live teaching sessions.</p>
+                </header>
+                <PricingSettings />
+              </div>
             )}
 
             {/* PARENT FORM */}

@@ -52,6 +52,7 @@ export default function CourseDetailPage() {
     checkoutUrl.searchParams.append('referenceId', courseId);
     checkoutUrl.searchParams.append('price', course?.price?.toString() || "0");
     checkoutUrl.searchParams.append('title', course?.title || "");
+    if (course?.instructorId) checkoutUrl.searchParams.append('recipientId', course.instructorId);
 
     router.push(checkoutUrl.pathname + checkoutUrl.search);
   };

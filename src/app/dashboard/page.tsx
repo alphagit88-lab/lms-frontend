@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
+import InstructorAnalyticsSection from '@/components/instructor/InstructorAnalyticsSection';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -226,6 +227,8 @@ export default function DashboardPage() {
                 <ActionCard icon={icons.chart} title="Instructor Hub" description="Full instructor dashboard overview" onClick={() => router.push('/instructor/dashboard')} gradient="bg-slate-50" />
               </div>
             </section>
+
+            <InstructorAnalyticsSection />
           </div>
         )}
 

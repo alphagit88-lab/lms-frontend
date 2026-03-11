@@ -79,14 +79,18 @@ export const ExamBuilder = () => {
 
     const handlePublish = async () => {
         if (!exam) return;
+        if (questions.length === 0) {
+            alert('Please add at least one question before publishing.');
+            return;
+        }
+        if (!window.confirm(`Publish "${exam.title}"? Students will be able to see and take this exam.`)) return;
         try {
             setSaving(true);
             const pub = await examApi.publishExam(exam.id);
             setExam(pub);
-            alert("Exam published seamlessly! Students can now see it.");
             router.push('/instructor/exams');
         } catch {
-            alert("Failed to publish.");
+            alert('Failed to publish.');
         } finally {
             setSaving(false);
         }
@@ -97,19 +101,21 @@ export const ExamBuilder = () => {
 
         // Validation
         if (!questionData.questionText) { return alert("Question text is required."); }
-        if (questionData.questionType === 'multiple_choice') {
+        if (questionData.questionType === 'multiple_choice' || questionData.questionType === 'true_false') {
             const hasCorrect = questionData.options?.some(o => o.isCorrect);
-            if (!hasCorrect) return alert("You must select at least one correct option for MCQs.");
+            if (!hasCorrect) return alert("You must select at least one correct option.");
         }
 
         try {
             setSaving(true);
             const payload = { ...questionData, orderIndex: questions.length };
 
-            // Clean options if Essay or Short Answer
+            // Clear options for types that don't use them
             if (payload.questionType === 'essay' || payload.questionType === 'short_answer') {
                 payload.options = [];
             }
+
+            await examApi.createQuestion(exam.id, payload);
 
             const updatedExam = await examApi.getExamById(exam.id);
             if (updatedExam.questions) setQuestions(updatedExam.questions);
@@ -257,16 +263,23 @@ export const ExamBuilder = () => {
                 <div>
                     <h2 className="text-xl font-bold text-gray-900">{exam.title}</h2>
                     <p className="text-sm text-gray-500 mt-1">
-                        {exam.examType.toUpperCase()} • {exam.durationMinutes} Mins • {questions.reduce((sum, q) => sum + parseFloat(q.marks.toString()), 0)} / {exam.totalMarks} Marks Built
+                        {exam.examType.toUpperCase()} &bull; {exam.durationMinutes} mins &bull; {questions.length} question{questions.length !== 1 ? 's' : ''} &bull; {questions.reduce((sum, q) => sum + parseFloat(q.marks.toString()), 0)} / {exam.totalMarks} marks
                     </p>
                 </div>
-                <button
-                    onClick={handlePublish}
-                    className={`px-5 py-2.5 rounded-lg font-bold text-white transition-colors flex items-center gap-2 ${exam.isPublished ? 'bg-green-500 hover:bg-green-600' : 'bg-orange-500 hover:bg-orange-600'}`}
-                >
-                    {exam.isPublished ? <CheckCircle2 className="w-5 h-5" /> : null}
-                    {exam.isPublished ? 'Live / Published' : 'Publish Test Now'}
-                </button>
+                <div className="flex flex-col items-end gap-1">
+                    <button
+                        onClick={handlePublish}
+                        disabled={saving || questions.length === 0}
+                        className={`px-5 py-2.5 rounded-lg font-bold text-white transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${exam.isPublished ? 'bg-green-500 hover:bg-green-600' : 'bg-orange-500 hover:bg-orange-600'}`}
+                        title={questions.length === 0 ? 'Add at least one question to publish' : ''}
+                    >
+                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : exam.isPublished ? <CheckCircle2 className="w-5 h-5" /> : null}
+                        {exam.isPublished ? 'Live / Published' : 'Publish Exam'}
+                    </button>
+                    {!exam.isPublished && questions.length === 0 && (
+                        <p className="text-xs text-amber-600">Add at least 1 question to publish</p>
+                    )}
+                </div>
             </div>
 
             {/* Questions List */}
@@ -317,12 +330,21 @@ export const ExamBuilder = () => {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Question Type</label>
                                 <select
                                     value={questionData.questionType}
-                                    onChange={e => setQuestionData({ ...questionData, questionType: e.target.value })}
+                                    onChange={e => {
+                                        const type = e.target.value;
+                                        const defaultOpts = type === 'true_false'
+                                            ? [{ optionText: 'True', isCorrect: true, orderIndex: 0 }, { optionText: 'False', isCorrect: false, orderIndex: 1 }]
+                                            : type === 'multiple_choice'
+                                            ? [{ optionText: '', isCorrect: true, orderIndex: 0 }, { optionText: '', isCorrect: false, orderIndex: 1 }]
+                                            : [];
+                                        setQuestionData({ ...questionData, questionType: type, options: defaultOpts });
+                                    }}
                                     className="w-full border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500"
                                 >
                                     <option value="multiple_choice">Multiple Choice (MCQ)</option>
-                                    <option value="essay">Written Essay / OCR Upload</option>
+                                    <option value="true_false">True / False</option>
                                     <option value="short_answer">Short Answer</option>
+                                    <option value="essay">Written Essay / OCR Upload</option>
                                 </select>
                             </div>
                             <div>
@@ -347,9 +369,11 @@ export const ExamBuilder = () => {
                             />
                         </div>
 
-                        {questionData.questionType === 'multiple_choice' && (
+                        {(questionData.questionType === 'multiple_choice' || questionData.questionType === 'true_false') && (
                             <div className="space-y-3 pt-4 border-t border-blue-200">
-                                <label className="block text-sm font-bold text-gray-800">Answers (Check the correct ones)</label>
+                                <label className="block text-sm font-bold text-gray-800">
+                                    {questionData.questionType === 'true_false' ? 'Select the correct answer' : 'Answers (Check the correct one)'}
+                                </label>
                                 {questionData.options?.map((opt, idx) => (
                                     <div key={idx} className="flex gap-3 items-center">
                                         <input
@@ -362,38 +386,48 @@ export const ExamBuilder = () => {
                                             }}
                                             className="w-5 h-5 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                         />
-                                        <input
-                                            value={opt.optionText}
-                                            onChange={(e) => {
-                                                const newOpts = [...questionData.options!];
-                                                newOpts[idx].optionText = e.target.value;
-                                                setQuestionData({ ...questionData, options: newOpts });
-                                            }}
-                                            placeholder={`Option ${String.fromCharCode(65 + idx)}`}
-                                            className="flex-1 border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
-                                        />
-                                        <button
-                                            onClick={() => {
-                                                const newOpts = questionData.options!.filter((_, i) => i !== idx);
-                                                setQuestionData({ ...questionData, options: newOpts });
-                                            }}
-                                            className="p-2 text-gray-400 hover:text-red-500"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        {questionData.questionType === 'true_false' ? (
+                                            <span className={`flex-1 p-2 rounded-lg font-medium ${opt.optionText === 'True' ? 'text-green-700' : 'text-red-700'}`}>
+                                                {opt.optionText}
+                                            </span>
+                                        ) : (
+                                            <>
+                                                <input
+                                                    value={opt.optionText}
+                                                    onChange={(e) => {
+                                                        const newOpts = [...questionData.options!];
+                                                        newOpts[idx].optionText = e.target.value;
+                                                        setQuestionData({ ...questionData, options: newOpts });
+                                                    }}
+                                                    placeholder={`Option ${String.fromCharCode(65 + idx)}`}
+                                                    className="flex-1 border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        const newOpts = questionData.options!.filter((_, i) => i !== idx);
+                                                        setQuestionData({ ...questionData, options: newOpts });
+                                                    }}
+                                                    className="p-2 text-gray-400 hover:text-red-500"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 ))}
-                                <button
-                                    onClick={() => {
-                                        setQuestionData({
-                                            ...questionData,
-                                            options: [...questionData.options!, { optionText: '', isCorrect: false, orderIndex: questionData.options!.length }]
-                                        });
-                                    }}
-                                    className="text-sm text-blue-600 font-medium hover:underline mt-2 inline-block"
-                                >
-                                    + Add Option
-                                </button>
+                                {questionData.questionType === 'multiple_choice' && (
+                                    <button
+                                        onClick={() => {
+                                            setQuestionData({
+                                                ...questionData,
+                                                options: [...questionData.options!, { optionText: '', isCorrect: false, orderIndex: questionData.options!.length }]
+                                            });
+                                        }}
+                                        className="text-sm text-blue-600 font-medium hover:underline mt-2 inline-block"
+                                    >
+                                        + Add Option
+                                    </button>
+                                )}
                             </div>
                         )}
 

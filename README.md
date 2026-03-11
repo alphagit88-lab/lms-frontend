@@ -8,10 +8,11 @@ Next.js frontend for the Learning Management System, supporting Students, Instru
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 16 (App Router) |
+| Framework | Next.js 14 (App Router) |
 | Language | TypeScript |
 | Styling | Tailwind CSS v4 |
 | UI Icons | Lucide React |
+| Charts | Recharts v3 (BarChart, RadialBarChart) |
 | Payments | Stripe (`@stripe/react-stripe-js`) |
 | Date Utilities | date-fns |
 | Package Manager | pnpm |
@@ -85,8 +86,14 @@ src/
 ├── app/                  # Next.js App Router pages
 │   ├── (public)/         # Publicly accessible pages
 │   ├── admin/            # Admin dashboard
-│   ├── instructor/       # Instructor pages (courses, bookings, earnings)
-│   ├── student/          # Student pages (my courses)
+│   │   ├── analytics/    # Platform KPIs, revenue chart, teacher activity table
+│   │   └── ...           # Users, courses, payouts, settings
+│   ├── instructor/       # Instructor pages
+│   │   ├── analytics/    # Earnings KPIs, earnings chart, student/attendance/performance tabs
+│   │   └── ...           # Courses, bookings, sessions, content, exams, earnings
+│   ├── student/          # Student pages
+│   │   ├── analytics/    # Exam history, learning timeline, score gauge
+│   │   └── ...           # My courses
 │   ├── parent/           # Parent pages
 │   ├── payments/         # Billing / checkout pages
 │   └── profile/          # User profile
@@ -107,10 +114,10 @@ src/
 
 | Role | Access |
 |------|--------|
-| `student` | Browse courses, book sessions, view recordings, make payments |
-| `instructor` | Manage courses & sessions, view bookings, see earnings & payouts |
+| `student` | Browse courses, book sessions, view recordings, make payments, view analytics (exam history, learning timeline, score gauge) |
+| `instructor` | Manage courses & sessions, view bookings, see earnings & payouts, analytics dashboard (student progress, attendance, course performance, earnings chart) |
 | `parent` | View enrolled children, manage bookings |
-| `admin` | Full system management via admin dashboard |
+| `admin` | Full system management via admin dashboard, platform analytics (revenue, teacher activity, KPIs) |
 
 Route access is controlled by `ProtectedRoute` — it redirects unauthenticated users to `/login` and unauthorised roles to `/dashboard`.
 

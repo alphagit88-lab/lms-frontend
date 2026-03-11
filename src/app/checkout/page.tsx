@@ -20,6 +20,7 @@ function CheckoutContent() {
     const price = searchParams.get("price");
     const title = searchParams.get("title");
     const currency = searchParams.get("currency") || "LKR";
+    const recipientId = searchParams.get("recipientId") || undefined;
 
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("payhere");
     const [checkoutParams, setCheckoutParams] = useState<PayHereCheckoutParams | null>(null);
@@ -51,6 +52,7 @@ function CheckoutContent() {
                     referenceId,
                     amount: numericPrice,
                     currency,
+                    recipientId,
                     itemDescription: title || "LMS Payment",
                     firstName: user?.firstName || "Student",
                     lastName: user?.lastName || "User",

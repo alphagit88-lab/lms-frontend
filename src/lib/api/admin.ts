@@ -77,10 +77,18 @@ export interface AdminPayment {
     studentId: string;
     courseId: string | null;
     amount: number;
+    currency: string;
+    paymentMethod: string;
+    paymentType: string;
     status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+    paymentStatus: string;
+    refundAmount: number | null;
+    refundDate: string | null;
     transactionId: string | null;
+    bankSlipUrl: string | null;
     createdAt: string;
     student: { firstName: string; lastName: string; email: string };
+    instructor: { firstName: string; lastName: string; email: string } | null;
     course: { title: string } | null;
 }
 
@@ -92,6 +100,22 @@ export interface AdminEnrollment {
     progress: number;
     student: { firstName: string; lastName: string; email: string };
     course: { title: string };
+}
+
+export interface ManualPayment {
+    id: string;
+    userId: string;
+    amount: number;
+    currency: string;
+    paymentType: string;
+    paymentStatus: string;
+    bankSlipUrl?: string | null;
+    manualReviewNote?: string | null;
+    referenceId: string;
+    metadata?: { courseIds?: string[] } | null;
+    createdAt: string;
+    updatedAt: string;
+    user?: { firstName: string; lastName: string; email: string };
 }
 
 export interface AdminParentLink {
@@ -148,10 +172,11 @@ export async function rejectTeacher(teacherId: string, reason?: string): Promise
     });
 }
 
-export async function getPayments(params?: { page?: number; status?: string }): Promise<{ payments: AdminPayment[], total: number, totalPages: number }> {
+export async function getPayments(params?: { page?: number; status?: string; method?: string }): Promise<{ payments: AdminPayment[], total: number, totalPages: number }> {
     const qs = new URLSearchParams();
     if (params?.page) qs.set('page', String(params.page));
     if (params?.status) qs.set('status', params.status);
+    if (params?.method) qs.set('method', params.method);
     return apiFetch(`/api/admin/payments${qs.toString() ? `?${qs.toString()}` : ''}`);
 }
 
@@ -162,7 +187,22 @@ export async function getEnrollments(params?: { page?: number }): Promise<{ enro
 }
 
 export async function confirmPayment(paymentId: string): Promise<{ message: string }> {
-    return apiFetch(`/api/payments/${paymentId}/confirm`, { method: 'POST' });
+    return apiFetch(`/api/admin/payments/${paymentId}/confirm`, { method: 'POST' });
+}
+
+export async function getPendingManualPayments(): Promise<{ payments: ManualPayment[] }> {
+    return apiFetch('/api/admin/payments/bank-transfer/pending');
+}
+
+export async function reviewManualPayment(
+    paymentId: string,
+    action: 'approve' | 'reject',
+    note?: string
+): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/payments/bank-transfer/${paymentId}/review`, {
+        method: 'POST',
+        body: JSON.stringify({ action, note }),
+    });
 }
 
 export async function getParentLinks(params?: { page?: number }): Promise<{ links: AdminParentLink[], total: number, totalPages: number }> {

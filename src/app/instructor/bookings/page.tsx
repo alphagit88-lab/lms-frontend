@@ -52,7 +52,7 @@ export default function InstructorBookingsPage() {
   // Load teacher profile to get autoConfirm setting
   useEffect(() => {
     if (user?.id) {
-      getMyTeacherProfile(user.id)
+      getMyTeacherProfile()
         .then((profile) => {
           setAutoConfirm(profile.autoConfirmBookings);
         })

@@ -1,22 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements } from "@stripe/react-stripe-js";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import PaymentForm from "@/components/payment/PaymentForm";
-import { createPaymentIntent } from "@/lib/api/payments";
+import { initializePayment, type PayHereCheckoutParams } from "@/lib/api/payments";
 import { CreditCard, CheckCircle, ShieldCheck } from "lucide-react";
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-
-export default function CheckoutPage() {
+function CheckoutContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
-    const [clientSecret, setClientSecret] = useState<string>("");
+    const [checkoutParams, setCheckoutParams] = useState<PayHereCheckoutParams | null>(null);
+    const [checkoutUrl, setCheckoutUrl] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
@@ -33,29 +30,35 @@ export default function CheckoutPage() {
             return;
         }
 
-        const initializePayment = async () => {
+        const init = async () => {
             try {
-                const response = await createPaymentIntent({
-                    type,
-                    referenceId,
-                    amount,
-                });
-                setClientSecret(response.clientSecret);
+                const response = await initializePayment({ type, referenceId, amount });
+
+                if (response.isFree) {
+                    // Free item — treat as instant success
+                    setSuccess(true);
+                    return;
+                }
+
+                if (!response.checkoutParams || !response.checkoutUrl) {
+                    throw new Error("Payment initialization failed. Please try again.");
+                }
+
+                setCheckoutParams(response.checkoutParams);
+                setCheckoutUrl(response.checkoutUrl);
             } catch (err) {
-                const error = err instanceof Error ? err : new Error("Failed to initialize payment.");
-                setError(error.message || "Failed to initialize payment.");
+                setError(err instanceof Error ? err.message : "Failed to initialize payment.");
             } finally {
                 setLoading(false);
             }
         };
 
-        initializePayment();
+        void init();
     }, [type, referenceId, amount]);
 
     const handleSuccess = () => {
         setSuccess(true);
         setTimeout(() => {
-            // Redirect based on type of payment
             if (type === "booking_session") {
                 router.push("/bookings");
             } else if (type === "course_enrollment") {
@@ -71,7 +74,7 @@ export default function CheckoutPage() {
             <ProtectedRoute>
                 <AppLayout>
                     <div className="flex h-[50vh] items-center justify-center">
-                        <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+                        <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
                     </div>
                 </AppLayout>
             </ProtectedRoute>
@@ -90,7 +93,7 @@ export default function CheckoutPage() {
                         <p className="text-slate-500 mb-8">
                             Your transaction has been securely processed. You will be redirected shortly...
                         </p>
-                        <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto"></div>
+                        <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto" />
                     </div>
                 </AppLayout>
             </ProtectedRoute>
@@ -101,7 +104,6 @@ export default function CheckoutPage() {
         <ProtectedRoute>
             <AppLayout>
                 <div className="max-w-4xl mx-auto py-10 px-4">
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
                         {/* Summary Sidebar */}
                         <div className="bg-slate-900 text-white rounded-3xl p-8 relative overflow-hidden shadow-2xl">
@@ -114,7 +116,7 @@ export default function CheckoutPage() {
                             <div className="space-y-4 mb-8">
                                 <div className="flex justify-between items-center text-sm font-medium border-b border-white/10 pb-4">
                                     <span className="text-slate-300">Description</span>
-                                    <span className="uppercase">{type?.replace('_', ' ')}</span>
+                                    <span className="uppercase">{type?.replace(/_/g, ' ')}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm font-medium border-b border-white/10 pb-4">
                                     <span className="text-slate-300">Reference ID</span>
@@ -127,18 +129,20 @@ export default function CheckoutPage() {
                             </div>
 
                             <div className="mt-8 flex items-start gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
-                                <ShieldCheck className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+                                <ShieldCheck className="w-6 h-6 text-emerald-400 shrink-0" />
                                 <div>
                                     <p className="text-sm font-bold text-white mb-1">Guaranteed Safe Checkout</p>
-                                    <p className="text-xs text-slate-400">Your personal details and payment information are encrypted and thoroughly secured by Stripe.</p>
+                                    <p className="text-xs text-slate-400">Your payment is encrypted and processed securely by PayHere.</p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Payment Card Form */}
+                        {/* PayHere Payment Form */}
                         <div>
                             <h1 className="text-2xl font-bold text-slate-900 mb-2">Complete Payment</h1>
-                            <p className="text-slate-500 text-sm mb-6">Enter your debit or credit card details below to finalize your booking.</p>
+                            <p className="text-slate-500 text-sm mb-6">
+                                Click the button below to proceed to PayHere&apos;s secure checkout page.
+                            </p>
 
                             {error && (
                                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl shadow-sm mb-6 text-sm font-medium">
@@ -146,26 +150,16 @@ export default function CheckoutPage() {
                                 </div>
                             )}
 
-                            {clientSecret && (
+                            {checkoutParams && checkoutUrl && (
                                 <div className="bg-white p-6 md:p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative">
-                                    <Elements
-                                        stripe={stripePromise}
-                                        options={{
-                                            clientSecret,
-                                            appearance: {
-                                                theme: 'stripe',
-                                                variables: {
-                                                    colorPrimary: '#2563eb', // blue-600
-                                                    borderRadius: '12px',
-                                                }
-                                            }
-                                        }}
-                                    >
-                                        <PaymentForm onSuccess={handleSuccess} amount={amount} />
-                                    </Elements>
-
-                                    <div className="absolute top-0 right-0 -m-3 p-2 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center gap-2 transform rotate-3 z-10 hidden sm:flex shadow-sm">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    <PaymentForm
+                                        onSuccess={handleSuccess}
+                                        amount={amount}
+                                        checkoutParams={checkoutParams}
+                                        checkoutUrl={checkoutUrl}
+                                    />
+                                    <div className="absolute top-0 right-0 -m-3 p-2 bg-emerald-50 rounded-xl border border-emerald-100 hidden sm:flex items-center gap-2 transform rotate-3 z-10 shadow-sm">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                                         <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">SSL Secured</span>
                                     </div>
                                 </div>
@@ -175,5 +169,21 @@ export default function CheckoutPage() {
                 </div>
             </AppLayout>
         </ProtectedRoute>
+    );
+}
+
+export default function CheckoutPage() {
+    return (
+        <Suspense fallback={
+            <ProtectedRoute>
+                <AppLayout>
+                    <div className="flex h-[50vh] items-center justify-center">
+                        <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+                    </div>
+                </AppLayout>
+            </ProtectedRoute>
+        }>
+            <CheckoutContent />
+        </Suspense>
     );
 }

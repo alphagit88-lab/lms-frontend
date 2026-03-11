@@ -571,7 +571,7 @@ export default function SlotModal({
                   <button
                     type="submit"
                     onClick={handleSubmit}
-                    disabled={loading || isPast}
+                    disabled={loading}
                     className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition disabled:opacity-50 flex items-center gap-2"
                   >
                     {loading && (
