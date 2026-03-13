@@ -84,7 +84,7 @@ function CreateCourseContent() {
       <div className="w-full min-h-screen bg-slate-50">
 
         {/* Hero Header */}
-        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 px-6 lg:px-10 pt-10 pb-20">
+        <div className="bg-linear-to-br from-slate-900 via-slate-800 to-blue-900 px-6 lg:px-10 pt-10 pb-20">
           <div className="flex items-center gap-4 mb-6">
             <Link
               href="/instructor/courses"
@@ -113,7 +113,7 @@ function CreateCourseContent() {
           {/* Error Banner */}
           {error && (
             <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-5 py-4 rounded-2xl text-sm font-medium flex items-center gap-3">
-              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               {error}

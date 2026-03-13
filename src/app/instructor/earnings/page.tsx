@@ -85,7 +85,7 @@ export default function EarningsDashboard() {
                 <div className="w-full min-h-screen bg-slate-50">
 
                     {/* Hero Header */}
-                    <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 px-6 lg:px-10 pt-10 pb-20">
+                    <div className="bg-linear-to-br from-slate-900 via-slate-800 to-emerald-900 px-6 lg:px-10 pt-10 pb-20">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <div className="flex items-center gap-3 mb-3">
@@ -133,7 +133,7 @@ export default function EarningsDashboard() {
                             </div>
 
                             {/* Pending Payout */}
-                            <div className="relative bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 shadow-xl overflow-hidden">
+                            <div className="relative bg-linear-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 shadow-xl overflow-hidden">
                                 <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full" />
                                 <div className="absolute -right-2 top-6 w-16 h-16 bg-white/10 rounded-full" />
                                 <div className="relative">
