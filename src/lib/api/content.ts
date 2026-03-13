@@ -84,6 +84,8 @@ export interface ContentAccessResponse {
   hasAccess: boolean;
   reason: string;
   canDownload: boolean;
+  price?: number | string;
+  teacherId?: string;
 }
 
 /**
@@ -193,6 +195,14 @@ export async function checkContentAccess(id: string): Promise<ContentAccessRespo
   }
 
   return response.json();
+}
+
+/**
+ * Get the streaming URL for video/audio content (used in <video src="...">).
+ * The browser sends Range headers automatically; the backend handles HTTP 206.
+ */
+export function getContentStreamUrl(id: string): string {
+  return `${API_BASE_URL}/api/content/${id}/stream`;
 }
 
 /**

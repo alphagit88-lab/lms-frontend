@@ -3,7 +3,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 // ─── Types (aligned with Booking entity schema) ─────────────────────
 
-export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+export type BookingStatus = 'pending' | 'pending_payment' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
 
 export interface BookingUser {
   id: string;
@@ -212,10 +212,12 @@ export async function cancelBooking(id: string, data?: CancelBookingData): Promi
 export async function getTeacherBookings(filters?: {
   status?: BookingStatus;
   date?: string; // YYYY-MM-DD
+  teacherId?: string;
 }): Promise<Booking[]> {
   const params = new URLSearchParams();
   if (filters?.status) params.append('status', filters.status);
   if (filters?.date) params.append('date', filters.date);
+  if (filters?.teacherId) params.append('teacherId', filters.teacherId);
 
   const query = params.toString() ? `?${params}` : '';
   const data = await apiFetch(`/api/bookings/teacher${query}`);
@@ -332,6 +334,8 @@ export function getBookingStatusInfo(status: BookingStatus): {
   switch (status) {
     case 'pending':
       return { label: 'Pending', color: 'text-amber-800', bgColor: 'bg-amber-50 border-amber-200', dotColor: 'bg-amber-500' };
+    case 'pending_payment':
+      return { label: 'Awaiting Payment', color: 'text-purple-800', bgColor: 'bg-purple-50 border-purple-200', dotColor: 'bg-purple-500' };
     case 'confirmed':
       return { label: 'Confirmed', color: 'text-green-800', bgColor: 'bg-green-50 border-green-200', dotColor: 'bg-green-500' };
     case 'cancelled':

@@ -111,6 +111,14 @@ export async function updateTeacherProfile(data: {
   });
 }
 
+/**
+ * Get teachers who teach similar subjects to the given teacher
+ */
+export async function getSimilarTeachers(teacherId: string, limit = 5): Promise<TeacherProfile[]> {
+  const data = await apiFetch(`/api/profiles/teacher/${teacherId}/similar?limit=${limit}`);
+  return data.teachers ?? [];
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────
 
 /**

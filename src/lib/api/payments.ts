@@ -253,3 +253,41 @@ export const reviewManualPayment = async (
     if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Failed to review payment.'); }
     return res.json();
 };
+
+// ─── Refund ───────────────────────────────────────────────────────────────────
+
+export interface RefundResponse {
+    message: string;
+    payment: {
+        id: string;
+        paymentStatus: string;
+        refundAmount: number | null;
+    };
+    refundAmount: number;
+    refundPercentage: number;
+}
+
+/**
+ * Process a refund for a payment.
+ * Students can only refund their own booking_session payments.
+ * Course enrollment refunds require admin role.
+ * Admins can pass an explicit refundPercentage (0–100).
+ * POST /api/payments/refund
+ */
+export const processRefund = async (
+    paymentId: string,
+    reason: string,
+    refundPercentage?: number,
+): Promise<RefundResponse> => {
+    const body: Record<string, unknown> = { paymentId, reason };
+    if (refundPercentage !== undefined) body.refundPercentage = refundPercentage;
+
+    const res = await fetch(`${API_BASE_URL}/api/payments/refund`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Failed to process refund.'); }
+    return res.json();
+};

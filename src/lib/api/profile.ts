@@ -134,7 +134,8 @@ export async function getMyTeacherProfile(): Promise<TeacherProfile | null> {
     throw new Error(error.error || 'Failed to fetch teacher profile');
   }
 
-  return profileResponse.json();
+  const data = await profileResponse.json();
+  return data.profile ?? data;
 }
 
 export async function updateTeacherProfile(data: UpdateTeacherProfileData): Promise<TeacherProfile> {

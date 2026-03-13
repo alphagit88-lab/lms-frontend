@@ -169,7 +169,8 @@ export async function getCourseById(id: string): Promise<Course> {
   }
 
   const data = await response.json();
-  return data.course;
+  // isEnrolled comes as a separate top-level field from the backend
+  return { ...data.course, isEnrolled: data.isEnrolled ?? false };
 }
 
 /**
@@ -287,4 +288,62 @@ export async function getCategories(): Promise<Category[]> {
 
   const data = await response.json();
   return data.categories;
+}
+
+// ── Lesson API helpers ──────────────────────────────────────────────
+
+export interface CreateLessonData {
+  title: string;
+  slug: string;
+  content?: string;
+  videoUrl?: string;
+  durationMinutes?: number;
+  isPreview?: boolean;
+}
+
+export interface UpdateLessonData {
+  title?: string;
+  slug?: string;
+  content?: string;
+  videoUrl?: string;
+  durationMinutes?: number;
+  isPreview?: boolean;
+  isPublished?: boolean;
+  sortOrder?: number;
+}
+
+async function lessonApiFetch(endpoint: string, options?: RequestInit) {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'An error occurred');
+  return data;
+}
+
+export async function getLessonsForCourse(courseId: string): Promise<Lesson[]> {
+  const data = await lessonApiFetch(`/api/lessons/courses/${courseId}/lessons`);
+  return data.lessons;
+}
+
+export async function createLesson(courseId: string, lessonData: CreateLessonData): Promise<Lesson> {
+  const data = await lessonApiFetch(`/api/lessons/courses/${courseId}/lessons`, {
+    method: 'POST',
+    body: JSON.stringify(lessonData),
+  });
+  return data.lesson;
+}
+
+export async function updateLesson(lessonId: string, updates: UpdateLessonData): Promise<Lesson> {
+  const data = await lessonApiFetch(`/api/lessons/${lessonId}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+  return data.lesson;
+}
+
+export async function deleteLesson(lessonId: string): Promise<void> {
+  await lessonApiFetch(`/api/lessons/${lessonId}`, { method: 'DELETE' });
 }
