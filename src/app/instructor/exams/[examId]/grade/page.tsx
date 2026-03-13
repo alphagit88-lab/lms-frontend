@@ -23,6 +23,8 @@ export default function GradeExamPage() {
     // Grading state: { answerId: { marks: number, feedback: string } }
     const [grades, setGrades] = useState<Record<string, { marks: number; feedback: string }>>({});
     const [savingId, setSavingId] = useState<string | null>(null);
+    const [ocrLoadingId, setOcrLoadingId] = useState<string | null>(null);
+    const [ocrResults, setOcrResults] = useState<Record<string, string>>({}); // answerId -> ocrText
     const [finalizingId, setFinalizingId] = useState<string | null>(null);
     const [publishing, setPublishing] = useState(false);
 
@@ -96,18 +98,24 @@ export default function GradeExamPage() {
         }
     };
 
-    const handleTriggerOCR = async (answerId: string) => {
+    const handleTriggerOCR = async (answerId: string, currentOcrText?: string) => {
+        // If OCR text already exists, allow re-running by clearing it first
         try {
-            setSavingId(answerId);
+            setOcrLoadingId(answerId);
             const result = await gradingApi.triggerOCR(answerId);
-            if (result.ocrText) {
-                alert(`OCR extracted: ${result.ocrText.substring(0, 200)}...`);
+            if (result?.ocrText) {
+                // Store OCR result inline (displayed in the card) instead of a blocking alert
+                setOcrResults(prev => ({ ...prev, [answerId]: result.ocrText }));
+                // Also refresh so the persisted ocrText is loaded from backend
                 await fetchData();
+            } else {
+                setOcrResults(prev => ({ ...prev, [answerId]: '(No text detected — try a clearer image)' }));
             }
-        } catch (err) {
-            alert('OCR processing failed.');
+        } catch (err: any) {
+            const msg = err?.response?.data?.error || err?.message || 'OCR processing failed.';
+            setOcrResults(prev => ({ ...prev, [answerId]: `Error: ${msg}` }));
         } finally {
-            setSavingId(null);
+            setOcrLoadingId(null);
         }
     };
 
@@ -252,16 +260,36 @@ export default function GradeExamPage() {
                                                                 {/* Student's Answer */}
                                                                 <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
                                                                     <div className="text-xs font-bold text-gray-500 uppercase mb-2">Student's Answer</div>
-                                                                    {answer.answerText ? (
-                                                                        <p className="text-gray-800 whitespace-pre-wrap text-sm">{answer.answerText}</p>
-                                                                    ) : (
-                                                                        <p className="text-gray-400 italic text-sm">No text answer provided</p>
-                                                                    )}
+                                                                    {(() => {
+                                                                        const isMCQ = q.questionType === 'multiple_choice' || q.questionType === 'true_false';
+
+                                                                        if (isMCQ && answer.answerText) {
+                                                                            // answerText holds an option UUID — resolve to the option label
+                                                                            const selectedOpt = q.options?.find(o => o.id === answer.answerText);
+                                                                            const isCorrect = selectedOpt?.isCorrect === true;
+                                                                            return (
+                                                                                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border ${
+                                                                                    isCorrect
+                                                                                        ? 'bg-green-50 border-green-200 text-green-800'
+                                                                                        : 'bg-red-50 border-red-200 text-red-700'
+                                                                                }`}>
+                                                                                    <span>{isCorrect ? '✓' : '✗'}</span>
+                                                                                    <span>{selectedOpt?.optionText ?? answer.answerText}</span>
+                                                                                </div>
+                                                                            );
+                                                                        }
+
+                                                                        if (answer.answerText) {
+                                                                            return <p className="text-gray-800 whitespace-pre-wrap text-sm">{answer.answerText}</p>;
+                                                                        }
+
+                                                                        return <p className="text-gray-400 italic text-sm">No text answer provided</p>;
+                                                                    })()}
 
                                                                     {answer.uploadUrl && (
                                                                         <div className="mt-3 flex items-center gap-3 flex-wrap">
                                                                             <a
-                                                                                href={answer.uploadUrl}
+                                                                                href={`http://localhost:5000${answer.uploadUrl}`}
                                                                                 target="_blank"
                                                                                 rel="noreferrer"
                                                                                 className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:underline font-medium"
@@ -269,24 +297,29 @@ export default function GradeExamPage() {
                                                                                 <Eye className="w-4 h-4" /> View Uploaded Image
                                                                             </a>
                                                                             <button
-                                                                                onClick={() => handleTriggerOCR(answer.id)}
-                                                                                disabled={savingId === answer.id}
+                                                                                onClick={() => handleTriggerOCR(answer.id, answer.ocrText)}
+                                                                                disabled={ocrLoadingId === answer.id}
                                                                                 className="inline-flex items-center gap-1.5 text-sm text-purple-600 hover:text-purple-700 font-medium disabled:opacity-50"
                                                                             >
-                                                                                {savingId === answer.id ? (
+                                                                                {ocrLoadingId === answer.id ? (
                                                                                     <Loader2 className="w-4 h-4 animate-spin" />
                                                                                 ) : (
                                                                                     <Scan className="w-4 h-4" />
                                                                                 )}
-                                                                                Run OCR
+                                                                                {ocrLoadingId === answer.id ? 'Running OCR...' : 'Run OCR'}
                                                                             </button>
                                                                         </div>
                                                                     )}
 
-                                                                    {answer.ocrText && (
+                                                                    {/* Show OCR text: from live result OR persisted in DB */}
+                                                                    {(ocrResults[answer.id] || answer.ocrText) && (
                                                                         <div className="mt-3 p-3 bg-purple-50 border border-purple-100 rounded-lg">
-                                                                            <div className="text-xs font-bold text-purple-600 mb-1">OCR Extracted Text</div>
-                                                                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{answer.ocrText}</p>
+                                                                            <div className="text-xs font-bold text-purple-600 mb-1 flex items-center gap-1.5">
+                                                                                <Scan className="w-3.5 h-3.5" /> OCR Extracted Text
+                                                                            </div>
+                                                                            <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                                                                {ocrResults[answer.id] || answer.ocrText}
+                                                                            </p>
                                                                         </div>
                                                                     )}
                                                                 </div>

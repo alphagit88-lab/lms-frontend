@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
@@ -219,7 +218,7 @@ export default function PackagesPage() {
                                 className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-slate-200"
                               >
                                 <div className="flex items-center gap-3 min-w-0">
-                                  <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                                  <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
                                     {index + 1}
                                   </span>
                                   <div className="min-w-0">

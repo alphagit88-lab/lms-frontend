@@ -133,12 +133,18 @@ export default function MyCoursesPage() {
                                         </div>
                                     </div>
 
-                                    <Link
-                                        href={`/courses/${enrollment.courseId}`}
-                                        className="w-full py-4 bg-slate-50 border border-slate-100 text-slate-900 rounded-2xl text-[10px] font-semibold uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all text-center"
-                                    >
-                                        Continue Learning
-                                    </Link>
+                                    {enrollment.course?.lessons && enrollment.course.lessons.length > 0 ? (
+                                        <Link
+                                            href={`/courses/${enrollment.courseId}/lessons/${enrollment.course.lessons.sort((a, b) => a.sortOrder - b.sortOrder)[0].id}`}
+                                            className="w-full py-4 bg-slate-50 border border-slate-100 text-slate-900 rounded-2xl text-[10px] font-semibold uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all text-center"
+                                        >
+                                            Continue Learning
+                                        </Link>
+                                    ) : (
+                                        <div className="w-full py-4 bg-slate-50 border border-slate-100 text-slate-400 rounded-2xl text-[10px] font-semibold uppercase tracking-widest text-center">
+                                            Content Coming Soon
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}

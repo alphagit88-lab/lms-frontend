@@ -118,7 +118,7 @@ export default function StudentBookingsPage() {
         {/* Success toast */}
         {successMessage && (
           <div className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>{successMessage}</span>
@@ -211,13 +211,17 @@ export default function StudentBookingsPage() {
                   key={booking.id}
                   className={`bg-white rounded-xl border shadow-sm p-5 ${isToday && booking.status === 'confirmed'
                       ? 'border-emerald-300 ring-1 ring-emerald-100'
-                      : 'border-slate-200'
+                      : booking.status === 'pending_payment'
+                        ? 'border-purple-200'
+                        : booking.status === 'pending'
+                          ? 'border-amber-200'
+                          : 'border-slate-200'
                     }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-sm flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 text-white font-bold text-sm flex items-center justify-center shrink-0">
                           {booking.teacher
                             ? `${booking.teacher.firstName[0]}${booking.teacher.lastName[0]}`.toUpperCase()
                             : '??'}
@@ -277,6 +281,35 @@ export default function StudentBookingsPage() {
                         </div>
                       )}
 
+                      {booking.status === 'pending_payment' && (
+                        <div className="mt-3 bg-purple-50 border border-purple-100 rounded-lg px-3 py-2 text-sm text-purple-700">
+                          <p className="flex items-center gap-2 mb-2">
+                            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Payment required to confirm this booking.
+                          </p>
+                          <Link
+                            href={`/payments/checkout?type=booking_session&referenceId=${booking.id}&amount=${booking.amount}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            Pay Now
+                          </Link>
+                        </div>
+                      )}
+
+                      {booking.status === 'pending' && (
+                        <div className="mt-3 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-sm text-amber-700 flex items-center gap-2">
+                          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Waiting for the instructor to approve your booking request.
+                        </div>
+                      )}
+
                       {booking.status === 'cancelled' && (
                         <div className="mt-3 space-y-2">
                           {booking.cancellationReason && (
@@ -304,7 +337,7 @@ export default function StudentBookingsPage() {
                       )}
                     </div>
 
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       {canCancel(booking) && (
                         <button
                           onClick={() => setCancellingBooking(booking)}

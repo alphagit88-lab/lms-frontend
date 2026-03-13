@@ -25,6 +25,7 @@ import {
     removeParentLink,
 } from '@/lib/api/admin';
 import { ManualPayment, getPendingManualPayments, reviewManualPayment } from '@/lib/api/admin';
+import { processRefund } from '@/lib/api/payments';
 
 type Tab = 'overview' | 'users' | 'teachers' | 'transactions' | 'enrollments' | 'parents';
 type TxSubTab = 'payhere' | 'bank-transfer';
@@ -52,6 +53,13 @@ export default function AdminPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
+    // Admin refund modal state
+    const [refundModal, setRefundModal] = useState<{ paymentId: string; amount: number; currency: string } | null>(null);
+    const [refundReason, setRefundReason] = useState('');
+    const [refundPct, setRefundPct] = useState<number>(100);
+    const [refundLoading, setRefundLoading] = useState(false);
+    const [refundError, setRefundError] = useState('');
+
     // Auth guard
     useEffect(() => {
         if (!authLoading && !user) router.push('/login');
@@ -61,8 +69,7 @@ export default function AdminPage() {
     // Initial load
     useEffect(() => {
         if (user?.role === 'admin') loadData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [user?.role]);
 
     const loadData = async () => {
         setLoading(true);
@@ -105,14 +112,15 @@ export default function AdminPage() {
         if (activeTab === 'transactions') { loadPayments(1); loadManualPayments(); }
         if (activeTab === 'enrollments') loadEnrollments(1);
         if (activeTab === 'parents') loadParentLinks(1);
-    }, [activeTab, roleFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab, roleFilter, user?.role]);
 
     const loadParentLinks = async (page: number) => {
         setLoading(true);
         try {
             const data = await getParentLinks({ page });
             setParentLinks(data.links);
-        } catch (err) {
+        } catch {
             setError('Failed to load parent links');
         } finally {
             setLoading(false);
@@ -127,7 +135,7 @@ export default function AdminPage() {
             setSuccess('Link removed');
             loadParentLinks(1);
             setTimeout(() => setSuccess(''), 3000);
-        } catch (err) {
+        } catch {
             setError('Failed to remove link');
         } finally {
             setActionLoading(null);
@@ -139,7 +147,7 @@ export default function AdminPage() {
         try {
             const data = await getPayments({ page });
             setPayments(data.payments);
-        } catch (err) {
+        } catch {
             setError('Failed to load payments');
         } finally {
             setLoading(false);
@@ -151,7 +159,7 @@ export default function AdminPage() {
         try {
             const data = await getEnrollments({ page });
             setEnrollments(data.enrollments);
-        } catch (err) {
+        } catch {
             setError('Failed to load enrollments');
         } finally {
             setLoading(false);
@@ -163,7 +171,7 @@ export default function AdminPage() {
         try {
             const data = await getPendingManualPayments();
             setManualPayments(data.payments);
-        } catch (err) {
+        } catch {
             setError('Failed to load manual payments');
         } finally {
             setLoading(false);
@@ -196,10 +204,35 @@ export default function AdminPage() {
             setSuccess('Payment confirmed and student enrolled!');
             loadPayments(1);
             setTimeout(() => setSuccess(''), 3000);
-        } catch (err) {
+        } catch {
             setError('Failed to confirm payment');
         } finally {
             setActionLoading(null);
+        }
+    };
+
+    const openAdminRefundModal = (p: AdminPayment) => {
+        setRefundModal({ paymentId: p.id, amount: Number(p.amount), currency: p.currency });
+        setRefundReason('');
+        setRefundPct(100);
+        setRefundError('');
+    };
+
+    const handleAdminRefund = async () => {
+        if (!refundModal) return;
+        if (!refundReason.trim()) { setRefundError('Please provide a reason.'); return; }
+        setRefundLoading(true);
+        setRefundError('');
+        try {
+            const result = await processRefund(refundModal.paymentId, refundReason.trim(), refundPct);
+            setRefundModal(null);
+            setSuccess(result.message || `Refund of ${refundModal.currency} ${result.refundAmount.toLocaleString()} processed.`);
+            loadPayments(1);
+            setTimeout(() => setSuccess(''), 5000);
+        } catch (err) {
+            setRefundError(err instanceof Error ? err.message : 'Refund failed.');
+        } finally {
+            setRefundLoading(false);
         }
     };
 
@@ -298,10 +331,11 @@ export default function AdminPage() {
     ];
 
     return (
+        <>
         <AppLayout>
             {/* Header */}
             <div className="mb-6">
-                <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden">
+                <div className="bg-linear-to-br from-slate-900 via-slate-800 to-indigo-900 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
@@ -446,7 +480,7 @@ export default function AdminPage() {
                                 >
                                     <div className="text-left">
                                         <p className="text-sm font-semibold text-slate-900">Manage {stats.totalUsers} Users</p>
-                                        <p className="text-xs text-slate-500">Enable/Disable accounts from student to admin</p>
+                                        <p className="text-xs text-slate-500">Enable/Disable accounts (Students, Teachers, parents)</p>
                                     </div>
                                     <svg className="w-5 h-5 text-slate-300 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                                 </button>
@@ -514,7 +548,6 @@ export default function AdminPage() {
                             <option value="student">Students</option>
                             <option value="instructor">Instructors</option>
                             <option value="parent">Parents</option>
-                            <option value="admin">Admins</option>
                         </select>
                     </div>
 
@@ -538,7 +571,7 @@ export default function AdminPage() {
                                             <tr key={u.id} className="border-b border-slate-100 hover:bg-slate-50/70 transition">
                                                 <td className="px-5 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 font-bold flex items-center justify-center flex-shrink-0 border border-slate-200 uppercase">
+                                                        <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 font-bold flex items-center justify-center shrink-0 border border-slate-200 uppercase">
                                                             {u.firstName?.[0]}{u.lastName?.[0]}
                                                         </div>
                                                         <div className="min-w-0">
@@ -596,7 +629,7 @@ export default function AdminPage() {
             {activeTab === 'teachers' && (
                 <div className="space-y-4">
                     <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0"><ClockIcon /></div>
+                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0"><ClockIcon /></div>
                         <div>
                             <p className="text-sm font-bold text-blue-900">Pending Review Queue</p>
                             <p className="text-xs text-blue-700">These teachers cannot publish courses or take bookings until you verify their credentials.</p>
@@ -616,7 +649,7 @@ export default function AdminPage() {
                             {pendingTeachers.map((t) => (
                                 <div key={t.teacherId} className="bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-lg transition-all flex flex-col">
                                     <div className="flex items-center gap-4 mb-5">
-                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-md uppercase">
+                                        <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-500 to-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-md uppercase">
                                             {t.teacher.firstName[0]}{t.teacher.lastName[0]}
                                         </div>
                                         <div className="min-w-0">
@@ -727,7 +760,7 @@ export default function AdminPage() {
                                                             <span className="text-[10px] text-slate-400 italic">Platform</span>
                                                         )}
                                                     </td>
-                                                    <td className="px-5 py-4 text-slate-500 text-xs max-w-[150px] truncate">{p.course?.title || '—'}</td>
+                                                    <td className="px-5 py-4 text-slate-500 text-xs max-w-37.5 truncate">{p.course?.title || '—'}</td>
                                                     <td className="px-5 py-4">
                                                         <p className="font-bold text-slate-900">{p.currency} {Number(p.amount).toFixed(2)}</p>
                                                         {p.refundAmount && (
@@ -754,6 +787,9 @@ export default function AdminPage() {
                                                         {p.paymentStatus === 'pending' && (
                                                             <button onClick={() => handleConfirmPayment(p.id)} disabled={actionLoading === p.id} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-700 disabled:opacity-50">CONFIRM</button>
                                                         )}
+                                                        {(p.paymentStatus === 'completed' || p.paymentStatus === 'partially_refunded') && (
+                                                            <button onClick={() => openAdminRefundModal(p)} className="px-3 py-1 bg-purple-600 text-white rounded-lg text-[10px] font-bold hover:bg-purple-700">REFUND</button>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))
@@ -772,8 +808,8 @@ export default function AdminPage() {
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-bold text-amber-900">Bank Transfer Review Queue</p>
-                                    <p className="text-xs text-amber-700">Students who paid via bank transfer are waiting for enrollment activation.</p>
+                                    <p className="text-sm font-bold text-amber-900">Bank Transfer Records</p>
+                                    <p className="text-xs text-amber-700">All bank transfer submissions — pending, under review, approved, and rejected.</p>
                                 </div>
                             </div>
 
@@ -782,8 +818,8 @@ export default function AdminPage() {
                                     <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                     </div>
-                                    <h3 className="text-lg font-bold text-slate-900 mb-1">No Pending Bank Transfers</h3>
-                                    <p className="text-slate-500 text-sm">All bank transfer submissions have been processed.</p>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-1">No Bank Transfer Records</h3>
+                                    <p className="text-slate-500 text-sm">No bank transfer payments have been submitted yet.</p>
                                 </div>
                             ) : (
                                 <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -820,7 +856,7 @@ export default function AdminPage() {
                                                             })()}
                                                         </td>
                                                         <td className="px-5 py-4 font-bold text-slate-900">{p.currency} {Number(p.amount).toFixed(2)}</td>
-                                                        <td className="px-5 py-4 font-mono text-xs text-slate-500 max-w-[120px] truncate">{p.referenceId || p.id}</td>
+                                                        <td className="px-5 py-4 font-mono text-xs text-slate-500 max-w-30 truncate">{p.referenceId || p.id}</td>
                                                         <td className="px-5 py-4 text-slate-400 text-xs whitespace-nowrap">
                                                             {new Date(p.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                                                         </td>
@@ -848,11 +884,13 @@ export default function AdminPage() {
                                                             )}
                                                         </td>
                                                         <td className="px-5 py-4 text-right">
-                                                            {p.paymentStatus === 'under_review' && (
+                                                            {(p.paymentStatus === 'under_review' || p.paymentStatus === 'pending') ? (
                                                                 <div className="flex items-center justify-end gap-2">
                                                                     <button onClick={() => handleReviewManualPayment(p.id, 'approve')} disabled={actionLoading === p.id} className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-bold hover:bg-emerald-700 transition disabled:opacity-50">APPROVE</button>
                                                                     <button onClick={() => handleReviewManualPayment(p.id, 'reject')} disabled={actionLoading === p.id} className="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-[10px] font-bold hover:bg-red-50 transition disabled:opacity-50">REJECT</button>
                                                                 </div>
+                                                            ) : (
+                                                                <span className="text-[10px] text-slate-400 italic">Processed</span>
                                                             )}
                                                         </td>
                                                     </tr>
@@ -948,6 +986,77 @@ export default function AdminPage() {
                 </div>
             )}
         </AppLayout>
+
+            {/* ── Admin Refund Modal ── */}
+            {refundModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+                        <div className="px-6 py-5 border-b border-slate-100">
+                            <h2 className="text-lg font-bold text-slate-900">Process Refund</h2>
+                            <p className="text-sm text-slate-500 mt-0.5">
+                                Original amount: <span className="font-semibold text-slate-700">{refundModal.currency} {refundModal.amount.toLocaleString()}</span>
+                            </p>
+                        </div>
+                        <div className="px-6 py-5 space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                                    Refund Percentage: <span className="text-purple-600">{refundPct}%</span>
+                                    <span className="ml-2 font-normal text-slate-500">
+                                        = {refundModal.currency} {(refundModal.amount * refundPct / 100).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    </span>
+                                </label>
+                                <input
+                                    type="range"
+                                    min={0}
+                                    max={100}
+                                    step={5}
+                                    value={refundPct}
+                                    onChange={(e) => setRefundPct(Number(e.target.value))}
+                                    className="w-full accent-purple-600"
+                                />
+                                <div className="flex justify-between text-xs text-slate-400 mt-0.5">
+                                    <span>0%</span><span>50%</span><span>100%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                                    Reason <span className="text-red-500">*</span>
+                                </label>
+                                <textarea
+                                    value={refundReason}
+                                    onChange={(e) => setRefundReason(e.target.value)}
+                                    rows={3}
+                                    maxLength={500}
+                                    placeholder="Reason for this refund decision..."
+                                    className={`w-full border rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none ${refundError && !refundReason.trim() ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
+                                />
+                            </div>
+                            {refundError && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-lg text-sm">{refundError}</div>
+                            )}
+                            <p className="text-xs text-slate-400">Note: Actual money transfer to student must be done manually via the PayHere Merchant Portal. This action updates the payment status in the database immediately.</p>
+                        </div>
+                        <div className="px-6 py-4 border-t border-slate-100 flex gap-3 justify-end">
+                            <button
+                                onClick={() => setRefundModal(null)}
+                                disabled={refundLoading}
+                                className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleAdminRefund}
+                                disabled={refundLoading}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-purple-600 rounded-xl hover:bg-purple-700 transition disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {refundLoading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                                Confirm Refund ({refundPct}%)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
 
@@ -966,7 +1075,7 @@ function ActionCardSmall({ title, description, onClick, icon }: { title: string;
 function StatCard({ label, value, icon, accent }: { label: string; value: number; icon: React.ReactNode; accent: string }) {
     return (
         <div className="bg-white rounded-2xl border border-slate-200/70 shadow-sm p-5 flex items-start gap-4 hover:shadow-md transition-all">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${accent}`}>{icon}</div>
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${accent}`}>{icon}</div>
             <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">{label}</p>
                 <p className="text-2xl font-bold text-slate-900">{value}</p>

@@ -28,8 +28,8 @@ export default function InstructorContentPage() {
 
   // Statistics
   const totalContent = contents.length;
-  const totalViews = contents.reduce((sum, c) => sum + c.viewCount, 0);
-  const totalDownloads = contents.reduce((sum, c) => sum + c.downloadCount, 0);
+  const totalViews = contents.reduce((sum, c) => sum + (c.viewCount ?? 0), 0);
+  const totalDownloads = contents.reduce((sum, c) => sum + (c.downloadCount ?? 0), 0);
   const publishedContent = contents.filter((c) => c.isPublished).length;
 
   const fetchContent = useCallback(async () => {

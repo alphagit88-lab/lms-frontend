@@ -217,7 +217,7 @@ export default function StudentAnalyticsPage() {
                           <tr key={exam.submissionId} className="hover:bg-slate-50 transition-colors">
                             <td className="px-6 py-4">
                               <p className="font-semibold text-slate-800">{exam.examTitle}</p>
-                              <p className="text-xs text-slate-400 capitalize">{exam.examType.replace(/_/g, " ")}</p>
+                              <p className="text-xs text-slate-400 capitalize">{(exam.examType ?? "").replace(/_/g, " ")}</p>
                             </td>
                             <td className="px-6 py-4 text-slate-500 text-xs">{exam.courseTitle}</td>
                             <td className="px-6 py-4 text-right">

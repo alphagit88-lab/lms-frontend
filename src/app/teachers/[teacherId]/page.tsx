@@ -10,6 +10,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import {
   TeacherProfile,
   getTeacherProfile,
+  getSimilarTeachers,
   getTeacherDisplayName,
   parseSubjects,
   parseLanguages,
@@ -49,6 +50,9 @@ export default function TeacherProfilePage() {
   // Key to force calendar re-fetch after a booking
   const [calendarKey, setCalendarKey] = useState(0);
 
+  // Similar teachers
+  const [similarTeachers, setSimilarTeachers] = useState<TeacherProfile[]>([]);
+
   useEffect(() => {
     async function loadProfile() {
       try {
@@ -56,6 +60,7 @@ export default function TeacherProfilePage() {
         setError('');
         const data = await getTeacherProfile(teacherId);
         setProfile(data);
+        getSimilarTeachers(teacherId, 4).then(setSimilarTeachers).catch(() => {});
       } catch (err: unknown) {
         const error = err instanceof Error ? err : new Error('Failed to load teacher profile');
         setError(error.message);
@@ -101,10 +106,19 @@ export default function TeacherProfilePage() {
   const handleBookingSuccess = useCallback((booking: Booking) => {
     setCreatedBooking(booking);
     setShowConfirmDialog(false);
-    setShowSuccess(true);
     setSelectedSlot(null);
     setCalendarKey((prev) => prev + 1);
-  }, []);
+
+    // Paid slot → go straight to checkout; student must pay before teacher sees it
+    if (booking.status === 'pending_payment' && booking.amount && Number(booking.amount) > 0) {
+      router.push(
+        `/payments/checkout?type=booking_session&referenceId=${booking.id}&amount=${booking.amount}`
+      );
+      return;
+    }
+
+    setShowSuccess(true);
+  }, [router]);
 
   const handleCloseSuccess = useCallback(() => {
     setShowSuccess(false);
@@ -521,6 +535,74 @@ export default function TeacherProfilePage() {
             )}
           </div>
         </div>
+
+        {/* ── Similar Teachers ── */}
+        {similarTeachers.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Teachers with Similar Subjects</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {similarTeachers.map((t) => {
+                const tName = getTeacherDisplayName(t);
+                const tSubjects = parseSubjects(t.subjects).slice(0, 3);
+                const tRating = formatRating(t.rating ? Number(t.rating) : undefined);
+                const tInitials = `${t.teacher.firstName[0]}${t.teacher.lastName[0]}`.toUpperCase();
+                return (
+                  <Link
+                    key={t.id}
+                    href={`/teachers/${t.teacherId}`}
+                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:shadow-md hover:border-blue-300 transition flex flex-col gap-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 text-white font-bold text-sm flex items-center justify-center shrink-0">
+                        {t.teacher.profilePicture ? (
+                          <Image
+                            src={t.teacher.profilePicture}
+                            alt={tName}
+                            width={40}
+                            height={40}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          tInitials
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1">
+                          <p className="text-sm font-semibold text-slate-900 truncate">{tName}</p>
+                          {t.verified && (
+                            <svg className="w-3.5 h-3.5 text-blue-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-slate-500">
+                          <svg className="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          {tRating}
+                        </div>
+                      </div>
+                    </div>
+                    {tSubjects.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {tSubjects.map((s) => (
+                          <span key={s} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {t.hourlyRate != null && Number(t.hourlyRate) > 0 && (
+                      <p className="text-xs text-emerald-700 font-medium">
+                        LKR {Number(t.hourlyRate).toLocaleString()}/hr
+                      </p>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
       {/* ── Single Booking Modals ── */}
       {selectedSlot && showConfirmDialog && (

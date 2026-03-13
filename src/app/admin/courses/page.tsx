@@ -292,8 +292,8 @@ export default function AdminCoursesPage() {
                         >
                           {/* Course */}
                           <td className="px-5 py-4">
-                            <div className="flex items-center gap-3 max-w-[260px]">
-                              <div className="w-12 h-10 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden">
+                            <div className="flex items-center gap-3 max-w-65">
+                              <div className="w-12 h-10 rounded-lg bg-slate-100 shrink-0 overflow-hidden">
                                 {thumbnailUrl ? (
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img

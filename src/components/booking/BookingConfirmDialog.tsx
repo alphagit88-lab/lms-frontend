@@ -28,6 +28,8 @@ export default function BookingConfirmDialog({
   const duration = calculateDuration(slot.startTime, slot.endTime);
   const spotsLeft = slot.maxBookings - slot.currentBookings;
 
+  const isPaid = slot.price != null && Number(slot.price) > 0;
+
   const handleConfirm = async () => {
     setError('');
     setLoading(true);
@@ -172,8 +174,9 @@ export default function BookingConfirmDialog({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>
-                Your booking will be created with <strong>Pending</strong> status. 
-                The teacher will confirm it shortly.
+                {isPaid
+                  ? <>After booking, you&apos;ll be redirected to <strong>PayHere</strong> to complete payment. The instructor will then confirm your session.</>  
+                  : <>Your booking will be created with <strong>Pending</strong> status. The teacher will confirm it shortly.</>}
               </span>
             </div>
           </div>
@@ -198,6 +201,13 @@ export default function BookingConfirmDialog({
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   Booking...
+                </>
+              ) : isPaid ? (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  Book &amp; Pay
                 </>
               ) : (
                 <>

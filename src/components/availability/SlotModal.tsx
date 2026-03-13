@@ -255,8 +255,8 @@ export default function SlotModal({
                   </span>
                 )}
                 {isPast && isEdit && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                    Past
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-600 text-white">
+                    Overdue
                   </span>
                 )}
               </div>

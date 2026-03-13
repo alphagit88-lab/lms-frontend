@@ -335,8 +335,18 @@ export default function TakeExamPage() {
                                             return (
                                                 <label
                                                     key={opt.id}
+                                                    onClick={() => handleAnswerChange(currentQ.id, opt.id)}
                                                     className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all ${isSelected ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}
                                                 >
+                                                    {/* Hidden native radio for keyboard/accessibility support */}
+                                                    <input
+                                                        type="radio"
+                                                        name={`question-${currentQ.id}`}
+                                                        value={opt.id}
+                                                        checked={isSelected}
+                                                        onChange={() => handleAnswerChange(currentQ.id, opt.id)}
+                                                        className="sr-only"
+                                                    />
                                                     <div className={`w-5 h-5 rounded-full border flex items-center justify-center mr-4 shrink-0 transition-colors ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-gray-300 bg-white'}`}>
                                                         {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                                                     </div>
@@ -428,29 +438,49 @@ export default function TakeExamPage() {
                             <ChevronLeft className="w-5 h-5" /> Previous
                         </button>
 
-                        <div className="flex gap-2">
-                            {questions.map((q, i) => {
-                                const isAnswered = !!answers[q.id]?.answerText;
-                                const isActive = currentQIndex === i;
-                                return (
-                                    <button
-                                        key={q.id}
-                                        onClick={() => setCurrentQIndex(i)}
-                                        className={`w-10 h-10 rounded-lg font-bold text-sm transition-all focus:outline-none ${isActive ? 'bg-blue-600 text-white ring-4 ring-blue-100' : isAnswered ? 'bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200' : 'bg-white border border-gray-300 text-gray-500 hover:bg-gray-100'}`}
-                                    >
-                                        {i + 1}
-                                    </button>
-                                );
-                            })}
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="flex gap-2">
+                                {questions.map((q, i) => {
+                                    const isAnswered = !!answers[q.id]?.answerText || !!answers[q.id]?.uploadUrl;
+                                    const isActive = currentQIndex === i;
+                                    return (
+                                        <button
+                                            key={q.id}
+                                            onClick={() => setCurrentQIndex(i)}
+                                            className={`w-10 h-10 rounded-lg font-bold text-sm transition-all focus:outline-none ${isActive ? 'bg-blue-600 text-white ring-4 ring-blue-100' : isAnswered ? 'bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200' : 'bg-white border border-gray-300 text-gray-500 hover:bg-gray-100'}`}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            {/* Progress summary */}
+                            <span className="text-xs text-gray-400">
+                                {Object.values(answers).filter(a => a.answerText || a.uploadUrl).length} of {questions.length} answered
+                            </span>
                         </div>
 
-                        <button
-                            disabled={currentQIndex === questions.length - 1}
-                            onClick={() => setCurrentQIndex(i => Math.min(questions.length - 1, i + 1))}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white hover:bg-gray-800 rounded-lg disabled:opacity-30 transition-colors font-medium"
-                        >
-                            Next <ChevronRight className="w-5 h-5" />
-                        </button>
+                        {/* On last question → show Finish & Submit instead of disabled Next */}
+                        {currentQIndex === questions.length - 1 ? (
+                            <button
+                                disabled={submitting}
+                                onClick={() => {
+                                    if (window.confirm('Are you sure you want to finish and submit your exam?')) {
+                                        handleSubmit();
+                                    }
+                                }}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold transition-colors disabled:opacity-50 shadow-sm shadow-green-200"
+                            >
+                                {submitting ? 'Submitting...' : <>Finish & Submit <ChevronRight className="w-5 h-5" /></>}
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => setCurrentQIndex(i => Math.min(questions.length - 1, i + 1))}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors font-medium"
+                            >
+                                Next <ChevronRight className="w-5 h-5" />
+                            </button>
+                        )}
                     </div>
                 </main>
             </div>

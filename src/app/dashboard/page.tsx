@@ -42,8 +42,8 @@ function StatCard({
   accent: string;
 }) {
   return (
-    <div className="bg-white/70 backdrop-blur-md rounded-[24px] border border-white/40 p-7 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_50px_-12px_rgba(0,0,0,0.08)] hover:-translate-y-1.5 transition-all duration-500 group flex items-center gap-6">
-      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform duration-500 group-hover:scale-110 shadow-lg ${accent}`}>
+    <div className="bg-white/70 backdrop-blur-md rounded-3xl border border-white/40 p-7 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_50px_-12px_rgba(0,0,0,0.08)] hover:-translate-y-1.5 transition-all duration-500 group flex items-center gap-6">
+      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-110 shadow-lg ${accent}`}>
         {icon}
       </div>
       <div>
@@ -75,7 +75,7 @@ function ActionCard({
   return (
     <button
       onClick={onClick}
-      className={`${gradient} relative group rounded-[32px] p-8 text-left border border-white/20 shadow-[0_12px_45px_-10px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] hover:-translate-y-2.5 transition-all duration-500 overflow-hidden flex flex-col items-start gap-5`}
+      className={`${gradient} relative group rounded-4xl p-8 text-left border border-white/20 shadow-[0_12px_45px_-10px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] hover:-translate-y-2.5 transition-all duration-500 overflow-hidden flex flex-col items-start gap-5`}
     >
       <div className="absolute top-0 right-0 p-8 opacity-5 transform group-hover:scale-150 transition-transform duration-[1.5s] ease-out">
         {icon}
@@ -87,7 +87,7 @@ function ActionCard({
         <h4 className="text-lg font-semibold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors tracking-tight">
           {title}
         </h4>
-        <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-[200px] opacity-90">
+        <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-50 opacity-90">
           {description}
         </p>
       </div>
@@ -137,11 +137,11 @@ export default function DashboardPage() {
         <div className="mb-14 group">
           <div className="relative rounded-[40px] overflow-hidden shadow-lg hover:shadow-xl transition-all duration-700">
             {/* Soft Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-indigo-900" />
+            <div className="absolute inset-0 bg-linear-to-br from-slate-900 to-indigo-900" />
 
             <div className="relative px-10 sm:px-14 py-16 sm:py-20 flex flex-col lg:flex-row items-center justify-between gap-10">
               <div className="flex items-center gap-10 flex-1 min-w-0">
-                <div className="hidden sm:block flex-shrink-0 relative">
+                <div className="hidden sm:block shrink-0 relative">
                   {profilePicUrl ? (
                     <Image
                       src={profilePicUrl}
@@ -198,6 +198,7 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-10">
                 <ActionCard icon={icons.search} title="Discover Courses" description="Explore our catalog of educational content" onClick={() => router.push('/courses')} gradient="bg-slate-50" />
                 <ActionCard icon={icons.book} title="My Curriculum" description="Access your enrolled courses and materials" onClick={() => router.push('/student/my-courses')} gradient="bg-slate-50" />
+                <ActionCard icon={icons.play} title="Browse Content" description="Watch videos, read PDFs, and purchase resources" onClick={() => router.push('/content')} gradient="bg-slate-50" />
                 <ActionCard icon={icons.calendar} title="Book 1-on-1" description="Schedule private sessions with instructors" onClick={() => router.push('/teachers')} gradient="bg-slate-50" />
                 <ActionCard icon={icons.chart} title="My Progress" description="Insights into your learning journey" onClick={() => router.push('/student/my-courses')} gradient="bg-slate-50" />
               </div>

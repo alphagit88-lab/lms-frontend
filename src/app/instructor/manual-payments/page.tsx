@@ -119,7 +119,7 @@ export default function InstructorManualPaymentsPage() {
                                                 <td className="px-5 py-4 font-bold text-slate-900">
                                                     {p.currency} {Number(p.amount).toFixed(2)}
                                                 </td>
-                                                <td className="px-5 py-4 font-mono text-xs text-slate-500 max-w-[140px] truncate">
+                                                <td className="px-5 py-4 font-mono text-xs text-slate-500 max-w-35 truncate">
                                                     {p.referenceId || p.id}
                                                 </td>
                                                 <td className="px-5 py-4 text-slate-400 text-xs">

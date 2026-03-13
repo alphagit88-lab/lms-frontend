@@ -184,6 +184,12 @@ function InstructorCoursesContent() {
                     >
                       Edit
                     </Link>
+                    <Link
+                      href={`/instructor/courses/${course.id}/lessons`}
+                      className="text-sm text-purple-600 hover:text-purple-700 font-medium transition"
+                    >
+                      Lessons
+                    </Link>
                     <button
                       onClick={() => handleTogglePublish(course.id, course.isPublished)}
                       className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition"

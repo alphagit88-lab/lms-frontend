@@ -32,6 +32,8 @@ function statusBadge(status: string) {
 function txTypeBadge(type: string) {
   const map: Record<string, string> = {
     payment: "bg-blue-100 text-blue-700",
+    payhere: "bg-blue-100 text-blue-700",
+    manual: "bg-amber-100 text-amber-700",
     refund: "bg-purple-100 text-purple-700",
     payout: "bg-emerald-100 text-emerald-700",
     platform_fee: "bg-orange-100 text-orange-700",

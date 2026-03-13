@@ -31,13 +31,41 @@ function CheckoutContent() {
     const [success, setSuccess] = useState<boolean>(false);
 
     const numericPrice = parseFloat(price || "0");
+    const isFreeItem = numericPrice === 0;
 
-    // Validate params on mount
+    // Validate params on mount; auto-enroll free items immediately
     useEffect(() => {
         if (!type || !referenceId || !price) {
             setError("Invalid checkout parameters.");
+            return;
         }
-    }, [type, referenceId, price]);
+        if (isFreeItem) {
+            initializePayment({
+                type,
+                referenceId,
+                amount: 0,
+                currency,
+                recipientId,
+                itemDescription: title || "LMS Enrollment",
+                firstName: user?.firstName || "Student",
+                lastName: user?.lastName || "User",
+                email: user?.email || "student@lms.com",
+            }).then(() => {
+                setSuccess(true);
+                // Auto-redirect to My Learning after 2 seconds
+                setTimeout(() => {
+                    if (type === "course_enrollment") {
+                        router.push("/student/my-courses");
+                    } else {
+                        router.push("/dashboard");
+                    }
+                }, 2000);
+            }).catch((err: unknown) => {
+                setError(err instanceof Error ? err.message : "Failed to enroll.");
+            });
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleProceed = async () => {
         if (!type || !referenceId || !price) return;
@@ -87,13 +115,13 @@ function CheckoutContent() {
 
     const handleReturn = () => {
         if (type === "course_enrollment") {
-            router.push(`/courses/${referenceId}`);
+            router.push("/student/my-courses");
         } else {
             router.push("/dashboard");
         }
     };
 
-    const showMethodPicker = !checkoutParams && !success && !error;
+    const showMethodPicker = !checkoutParams && !success && !error && !isFreeItem;
 
     return (
         <ProtectedRoute>
@@ -132,14 +160,17 @@ function CheckoutContent() {
                                 </svg>
                             </div>
                             <h2 className="text-2xl font-bold text-emerald-900 mb-2">Access Granted!</h2>
-                            <p className="text-emerald-700 font-medium mb-8">
+                            <p className="text-emerald-700 font-medium mb-2">
                                 This item is free — your access has been activated instantly.
+                            </p>
+                            <p className="text-emerald-600 text-sm mb-8">
+                                Redirecting to My Learning in a moment...
                             </p>
                             <button
                                 onClick={handleReturn}
                                 className="px-8 py-3.5 bg-emerald-600 text-white font-bold uppercase tracking-widest text-sm rounded-xl hover:bg-emerald-700 transition"
                             >
-                                Return to Content
+                                Go to My Learning
                             </button>
                         </div>
                     )}
@@ -151,14 +182,25 @@ function CheckoutContent() {
                             {/* Order Summary */}
                             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
                                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Order Summary</h3>
-                                <div className="flex items-start justify-between mb-6 pb-6 border-b border-slate-100">
-                                    <div className="pr-4">
+                                <div className="flex items-center justify-between gap-3 mb-6 pb-6 border-b border-slate-100">
+                                    <div className="flex-1 min-w-0">
                                         <div className="text-xs font-semibold text-blue-600 mb-1 capitalize">
                                             {type?.replace(/_/g, " ")}
                                         </div>
-                                        <h4 className="font-bold text-slate-900 leading-tight">{title || "Item"}</h4>
+                                        <h4 className="font-bold text-slate-900 leading-tight truncate">{title || "Item"}</h4>
                                     </div>
-                                    <span className="font-bold text-slate-900">{currency} {numericPrice.toFixed(2)}</span>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <span className="font-bold text-slate-900">{currency} {numericPrice.toFixed(2)}</span>
+                                        <button
+                                            onClick={() => router.back()}
+                                            title="Remove from order"
+                                            className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition"
+                                        >
+                                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-slate-500 text-sm">Subtotal</span>
@@ -231,12 +273,23 @@ function CheckoutContent() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
                                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Order Summary</h3>
-                                <div className="flex items-start justify-between mb-6 pb-6 border-b border-slate-100">
-                                    <div className="pr-4">
+                                <div className="flex items-center justify-between gap-3 mb-6 pb-6 border-b border-slate-100">
+                                    <div className="flex-1 min-w-0">
                                         <div className="text-xs font-semibold text-blue-600 mb-1 capitalize">{type?.replace(/_/g, " ")}</div>
-                                        <h4 className="font-bold text-slate-900 leading-tight">{title || "Item"}</h4>
+                                        <h4 className="font-bold text-slate-900 leading-tight truncate">{title || "Item"}</h4>
                                     </div>
-                                    <span className="font-bold text-slate-900">{currency} {numericPrice.toFixed(2)}</span>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <span className="font-bold text-slate-900">{currency} {numericPrice.toFixed(2)}</span>
+                                        <button
+                                            onClick={() => router.back()}
+                                            title="Remove from order"
+                                            className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition"
+                                        >
+                                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="flex items-center justify-between pt-6 border-t border-slate-100">
                                     <span className="font-bold text-slate-900 text-lg">Total Due</span>

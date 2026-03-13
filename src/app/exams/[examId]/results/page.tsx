@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { gradingApi, StudentResult } from '@/lib/api/grading';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
 import {
-    CheckCircle2, XCircle, Clock, Award, Download,
-    ChevronDown, ChevronUp, Loader2, FileText, MessageSquare
+    CheckCircle2,  Clock, Award, Download,
+    ChevronDown, ChevronUp, Loader2, MessageSquare
 } from 'lucide-react';
 
 interface ResultExam {
@@ -195,11 +195,33 @@ export default function ExamResultsPage() {
                                                             {/* Your answer */}
                                                             <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                                                                 <div className="text-xs font-bold text-gray-500 uppercase mb-1">Your Answer</div>
-                                                                <p className="text-sm text-gray-800">
-                                                                    {answer?.answerText || (answer?.uploadUrl ? '[Handwritten Upload]' : 'No answer provided')}
-                                                                </p>
+                                                                {(() => {
+                                                                    const isMCQ = q.questionType === 'multiple_choice' || q.questionType === 'true_false';
+                                                                    if (isMCQ && answer?.answerText) {
+                                                                        const selectedOpt = q.options?.find(o => o.id === answer.answerText);
+                                                                        const isCorrect = selectedOpt?.isCorrect === true;
+                                                                        return (
+                                                                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border ${
+                                                                                isCorrect
+                                                                                    ? 'bg-green-50 border-green-200 text-green-800'
+                                                                                    : 'bg-red-50 border-red-200 text-red-700'
+                                                                            }`}>
+                                                                                <span>{isCorrect ? '✓' : '✗'}</span>
+                                                                                <span>{selectedOpt?.optionText ?? answer.answerText}</span>
+                                                                            </div>
+                                                                        );
+                                                                    }
+                                                                    if (answer?.uploadUrl) {
+                                                                        return <p className="text-sm text-gray-500 italic">[Handwritten Upload]</p>;
+                                                                    }
+                                                                    return (
+                                                                        <p className="text-sm text-gray-800">
+                                                                            {answer?.answerText || 'No answer provided'}
+                                                                        </p>
+                                                                    );
+                                                                })()}
                                                                 {answer?.uploadUrl && (
-                                                                    <a href={answer.uploadUrl} target="_blank" rel="noreferrer"
+                                                                    <a href={`http://localhost:5000${answer.uploadUrl}`} target="_blank" rel="noreferrer"
                                                                         className="text-sm text-blue-600 hover:underline mt-1 inline-block">
                                                                         View Upload →
                                                                     </a>
