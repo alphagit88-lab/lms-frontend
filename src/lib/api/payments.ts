@@ -33,7 +33,7 @@ export interface PaymentInitResponse {
 }
 
 export interface PaymentRequest {
-    type: 'course_enrollment' | 'booking_session' | 'content_purchase';
+    type: 'course_enrollment' | 'booking_session' | 'booking_package' | 'content_purchase';
     referenceId: string;
     amount: number;
     currency?: string;
@@ -112,6 +112,55 @@ export const getTeacherEarnings = async () => {
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to fetch teacher earnings');
+    }
+
+    return response.json();
+};
+
+export const getPaymentsList = async (params?: { page?: number; status?: string; method?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.status) qs.set('status', params.status);
+    if (params?.method) qs.set('method', params.method);
+
+    const response = await fetch(`${API_BASE_URL}/api/payments/list${qs.toString() ? `?${qs.toString()}` : ''}`, {
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch payments list');
+    }
+
+    return response.json();
+};
+
+export const confirmPayHerePayment = async (paymentId: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/payments/${paymentId}/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to confirm payment');
+    }
+
+    return response.json();
+};
+
+export const cancelPayHerePayment = async (paymentId: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/payments/${paymentId}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to cancel payment');
     }
 
     return response.json();

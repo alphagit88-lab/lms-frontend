@@ -60,8 +60,10 @@ export async function getMyAssistants(): Promise<Assistant[]> {
 export async function updateAssistantPermissions(
   relationshipId: string,
   permissions: Partial<AssistantPermissions>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<{ message: string; assistant: any }> {
   // Map frontend keys to backend keys
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const backendData: any = {};
   if (permissions.manageSlots !== undefined) backendData.canManageSlots = permissions.manageSlots;
   if (permissions.manageBookings !== undefined) backendData.canManageBookings = permissions.manageBookings;

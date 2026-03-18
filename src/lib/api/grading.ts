@@ -113,6 +113,7 @@ export const gradingApi = {
     },
 
     // Get my result (student)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     getMyResult: async (examId: string): Promise<{ exam: any; results: StudentResult[] }> => {
         return await fetchJSON(`/api/grading/exam/${examId}/my-result`);
     },

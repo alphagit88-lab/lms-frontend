@@ -59,6 +59,8 @@ export interface UpdateSlotData {
   price?: number;
   notes?: string;
   status?: 'available' | 'booked' | 'blocked';
+  isRecurring?: boolean;
+  recurrenceEndDate?: string;
 }
 
 export interface CreateRecurringData {

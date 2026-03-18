@@ -300,6 +300,20 @@ export async function getPackageById(id: string): Promise<{
   return apiFetch(`/api/bookings/packages/${id}`);
 }
 
+/**
+ * Remove a session from a package
+ * POST /api/bookings/packages/:id/remove-session/:bookingId
+ */
+export async function removeSessionFromPackage(packageId: string, bookingId: string): Promise<{
+    message: string;
+    package: BookingPackage;
+    remainingBookings: Booking[];
+}> {
+    return apiFetch(`/api/bookings/packages/${packageId}/remove-session/${bookingId}`, {
+        method: 'POST'
+    });
+}
+
 // ─── Display Helpers ────────────────────────────────────────────────
 
 /**

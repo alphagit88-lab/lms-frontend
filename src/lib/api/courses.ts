@@ -126,6 +126,66 @@ export interface UpdateCourseData {
 // API Functions
 
 /**
+ * Upload course media (thumbnail/preview)
+ */
+export async function uploadCourseMedia(file: File): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE_URL}/api/courses/upload-media`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include', // Needed if authenticating via cookies
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to upload media');
+  }
+
+  return response.json();
+}
+
+/**
+ * Helper to ensure local file paths are absolute URLs
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function normalizeCourseUrls(course: any): any {
+  if (!course) return course;
+  const c = { ...course };
+  if (c.thumbnail && c.thumbnail.startsWith('/uploads/')) {
+    c.thumbnail = API_BASE_URL + c.thumbnail;
+  }
+  if (c.previewVideoUrl && c.previewVideoUrl.startsWith('/uploads/')) {
+    c.previewVideoUrl = API_BASE_URL + c.previewVideoUrl;
+  }
+  // Also normalize instructor profile picture if it exists
+  if (c.instructor && c.instructor.profilePicture && c.instructor.profilePicture.startsWith('/uploads/')) {
+    c.instructor.profilePicture = API_BASE_URL + c.instructor.profilePicture;
+  }
+  return c;
+}
+
+/**
+ * Delete course media
+ */
+export async function deleteCourseMedia(url: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/courses/delete-media`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ url }),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to remove media');
+  }
+}
+
+/**
  * Get all courses with optional filters
  */
 export async function getCourses(filters?: CourseFilters): Promise<Course[]> {
@@ -151,7 +211,7 @@ export async function getCourses(filters?: CourseFilters): Promise<Course[]> {
   }
 
   const data = await response.json();
-  return data.courses;
+  return (data.courses || []).map(normalizeCourseUrls);
 }
 
 /**
@@ -170,7 +230,8 @@ export async function getCourseById(id: string): Promise<Course> {
 
   const data = await response.json();
   // isEnrolled comes as a separate top-level field from the backend
-  return { ...data.course, isEnrolled: data.isEnrolled ?? false };
+  const normalizedCourse = normalizeCourseUrls(data.course);
+  return { ...normalizedCourse, isEnrolled: data.isEnrolled ?? false };
 }
 
 /**
@@ -188,7 +249,7 @@ export async function getMyCourses(): Promise<Course[]> {
   }
 
   const data = await response.json();
-  return data.courses;
+  return (data.courses || []).map(normalizeCourseUrls);
 }
 
 /**
@@ -210,7 +271,7 @@ export async function createCourse(courseData: CreateCourseData): Promise<Course
   }
 
   const data = await response.json();
-  return data.course;
+  return normalizeCourseUrls(data.course);
 }
 
 /**
@@ -232,7 +293,7 @@ export async function updateCourse(id: string, courseData: UpdateCourseData): Pr
   }
 
   const data = await response.json();
-  return data.course;
+  return normalizeCourseUrls(data.course);
 }
 
 /**

@@ -9,7 +9,7 @@ export interface SubmissionHistory {
     marksAwarded?: number;
     timeSpentMinutes?: number;
     submittedAt: string;
-    metadata?: any;
+    metadata?: unknown;
 }
 
 export interface AnswerPayload {

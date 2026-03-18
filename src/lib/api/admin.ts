@@ -190,6 +190,10 @@ export async function confirmPayment(paymentId: string): Promise<{ message: stri
     return apiFetch(`/api/admin/payments/${paymentId}/confirm`, { method: 'POST' });
 }
 
+export async function cancelPayment(paymentId: string): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/payments/${paymentId}/cancel`, { method: 'POST' });
+}
+
 export async function getPendingManualPayments(): Promise<{ payments: ManualPayment[] }> {
     return apiFetch('/api/admin/payments/bank-transfer/pending');
 }
