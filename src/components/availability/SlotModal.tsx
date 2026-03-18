@@ -39,6 +39,9 @@ export default function SlotModal({
   const [price, setPrice] = useState('');
   const [maxBookings, setMaxBookings] = useState('1');
   const [notes, setNotes] = useState('');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+  const [isCustomMaxBookings, setIsCustomMaxBookings] = useState(false);
   const [loading, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [confirmAction, setConfirmAction] = useState<'block' | 'delete' | 'cancel-recurring' | null>(null);
@@ -62,6 +65,13 @@ export default function SlotModal({
       setPrice(slot.price != null ? String(slot.price) : '');
       setMaxBookings(String(slot.maxBookings));
       setNotes(slot.notes || '');
+      setIsRecurring(!!slot.isRecurring);
+      setRecurrenceEndDate(slot.recurrenceEndDate ? slot.recurrenceEndDate.split('T')[0] : '');
+      
+      const standardOptions = ['1', '2', '3', '5', '10', '20', '50'];
+      const currentMax = String(slot.maxBookings);
+      setMaxBookings(currentMax);
+      setIsCustomMaxBookings(!standardOptions.includes(currentMax));
     } else {
       // Create mode — prefill from calendar click
       if (prefillDate) {
@@ -84,6 +94,9 @@ export default function SlotModal({
       setPrice('');
       setMaxBookings('1');
       setNotes('');
+      setIsRecurring(false);
+      setRecurrenceEndDate('');
+      setIsCustomMaxBookings(false);
     }
   }, [isOpen, slot, prefillDate, prefillHour]);
 
@@ -109,6 +122,16 @@ export default function SlotModal({
       setError('Cannot create slots in the past');
       return;
     }
+    
+    if (isRecurring && !recurrenceEndDate) {
+      setError('Repeat Until date is required for recurring slots');
+      return;
+    }
+    
+    if (isRecurring && new Date(recurrenceEndDate) < startDateTime) {
+      setError('Repeat Until date must be after the slot date');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -117,7 +140,10 @@ export default function SlotModal({
           startTime: startDateTime.toISOString(),
           endTime: endDateTime.toISOString(),
           price: price ? parseFloat(price) : undefined,
+          maxBookings: parseInt(maxBookings) || 1,
           notes: notes || undefined,
+          isRecurring,
+          recurrenceEndDate: isRecurring ? recurrenceEndDate : undefined,
         });
       } else {
         await onSave({
@@ -126,6 +152,8 @@ export default function SlotModal({
           price: price ? parseFloat(price) : undefined,
           maxBookings: parseInt(maxBookings) || 1,
           notes: notes || undefined,
+          isRecurring,
+          recurrenceEndDate: isRecurring ? recurrenceEndDate : undefined,
         });
       }
       onClose();
@@ -283,7 +311,7 @@ export default function SlotModal({
                   <p className="font-medium">Are you sure you want to delete this slot?</p>
                   <p className="text-xs mt-0.5 opacity-80">
                     {hasBookings
-                      ? 'Pending bookings will be cancelled. This cannot be undone.'
+                      ? 'All existing bookings (confirmed and pending) will be cancelled. This cannot be undone.'
                       : 'This cannot be undone.'}
                   </p>
                   <div className="flex gap-2 mt-2">
@@ -397,7 +425,7 @@ export default function SlotModal({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                disabled={(isEdit && hasBookings) || isBlocked}
+                disabled={(isEdit && hasBookings && !isPast) || isBlocked}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none disabled:bg-gray-100 disabled:text-gray-500"
               />
             </div>
@@ -412,7 +440,7 @@ export default function SlotModal({
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  disabled={(isEdit && hasBookings) || isBlocked}
+                  disabled={(isEdit && hasBookings && !isPast) || isBlocked}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none disabled:bg-gray-100 disabled:text-gray-500"
                 />
               </div>
@@ -424,15 +452,20 @@ export default function SlotModal({
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  disabled={(isEdit && hasBookings) || isBlocked}
+                  disabled={(isEdit && hasBookings && !isPast) || isBlocked}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none disabled:bg-gray-100 disabled:text-gray-500"
                 />
               </div>
             </div>
 
-            {isEdit && hasBookings && (
+            {isEdit && hasBookings && !isPast && (
               <p className="text-xs text-amber-600">
                 Time cannot be changed because this slot has existing bookings.
+              </p>
+            )}
+            {isEdit && hasBookings && isPast && (
+              <p className="text-xs text-blue-600 font-medium">
+                Note: This is a past slot. You can edit the time to correct records.
               </p>
             )}
 
@@ -464,16 +497,26 @@ export default function SlotModal({
               </div>
             </div>
 
-            {/* Max Bookings (only for create) */}
-            {!isEdit && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Max Students
-                </label>
+            {/* Max Bookings */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Max Students
+              </label>
+              <div className="space-y-3">
                 <select
-                  value={maxBookings}
-                  onChange={(e) => setMaxBookings(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                  value={isCustomMaxBookings ? "custom" : maxBookings}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "custom") {
+                      setIsCustomMaxBookings(true);
+                      // Don't change maxBookings yet, keep previous
+                    } else {
+                      setIsCustomMaxBookings(false);
+                      setMaxBookings(val);
+                    }
+                  }}
+                  disabled={isBlocked}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none disabled:bg-gray-100 disabled:text-gray-500"
                 >
                   <option value="1">1 (One-on-one)</option>
                   <option value="2">2 students</option>
@@ -482,9 +525,26 @@ export default function SlotModal({
                   <option value="10">10 students</option>
                   <option value="20">20 students (group class)</option>
                   <option value="50">50 students (lecture)</option>
+                  <option value="custom">Custom number...</option>
                 </select>
+
+                {isCustomMaxBookings && (
+                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <input
+                      type="number"
+                      min="1"
+                      max="500"
+                      value={maxBookings}
+                      onChange={(e) => setMaxBookings(e.target.value)}
+                      placeholder="Enter student count"
+                      disabled={isBlocked}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none disabled:bg-gray-100"
+                    />
+                    <span className="text-sm text-gray-500">students</span>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
             {/* Notes */}
             <div>
@@ -499,6 +559,48 @@ export default function SlotModal({
                 placeholder="e.g., Grade 11 Physics, Topic: Mechanics"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none resize-none disabled:bg-gray-100 disabled:text-gray-500"
               />
+            </div>
+
+            {/* Recurring Option */}
+            <div className="pt-2 border-t border-gray-100">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={isRecurring}
+                  onChange={(e) => setIsRecurring(e.target.checked)}
+                  disabled={isBlocked || (isEdit && slot?.isRecurring)}
+                  className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black"
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition">
+                    Repeat Weekly
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Auto-generate this slot for future weeks
+                  </span>
+                </div>
+              </label>
+
+              {isRecurring && (
+                <div className="mt-3 pl-6 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <label className="block text-xs font-medium text-gray-600">
+                    Repeat Until
+                  </label>
+                  <input
+                    type="date"
+                    value={recurrenceEndDate}
+                    onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                    min={date}
+                    disabled={isBlocked || (isEdit && slot?.isRecurring)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none disabled:bg-gray-100"
+                  />
+                  {isEdit && slot?.isRecurring && (
+                    <p className="text-[10px] text-amber-600">
+                      Note: You cannot change recurrence settings for an existing recurring slot here. Use &quot;Cancel All Future&quot; to remove them.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </form>
 
@@ -535,7 +637,7 @@ export default function SlotModal({
                   <button
                     type="button"
                     onClick={handleDelete}
-                    disabled={loading || (hasBookings && isBooked)}
+                    disabled={loading}
                     className="px-3 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition disabled:opacity-50"
                     title={hasBookings && isBooked ? 'Cannot delete slot with confirmed bookings' : 'Delete this slot'}
                   >

@@ -46,7 +46,6 @@ interface PaymentFormProps {
  *  5. PayHere redirects user back to return_url or cancel_url.
  */
 export default function PaymentForm({
-    onSuccess,
     amount,
     currency = "LKR",
     checkoutParams,
@@ -72,7 +71,7 @@ export default function PaymentForm({
                     </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
-                    You will be redirected to PayHere's secure payment page to complete your purchase.
+                    You will be redirected to PayHere&apos;s secure payment page to complete your purchase.
                 </p>
             </div>
 

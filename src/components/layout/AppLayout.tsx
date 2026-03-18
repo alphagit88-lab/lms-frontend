@@ -58,7 +58,7 @@ const navItems: NavItem[] = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
-    roles: ['student'],
+    roles: ['student', 'admin', 'parent'],
   },
   {
     label: 'My Exams',

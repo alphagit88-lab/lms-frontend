@@ -31,7 +31,6 @@ export const JoinButton: React.FC<JoinButtonProps> = ({ session, onStatusChange 
 
     // Can join 15 mins before start
     const canJoin = timeLeft <= 15 * 60 * 1000 && !isCompleted && !isCancelled;
-    const isRightNow = timeLeft <= 0 && !isCompleted && !isCancelled;
 
     const handleStart = async () => {
         if (!isTeacher || isStarted || isCompleted) return;
@@ -40,8 +39,8 @@ export const JoinButton: React.FC<JoinButtonProps> = ({ session, onStatusChange 
             const updated = await sessionApi.startSession(session.id);
             if (onStatusChange) onStatusChange(updated);
             // Open Zoom link if it exists, otherwise alert
-            if (session.meetingLink) {
-                window.open(session.meetingLink, '_blank');
+            if (updated.meetingLink) {
+                window.open(updated.meetingLink, '_blank');
             } else {
                 alert('Session started, but no Zoom meeting link is attached to this session.');
             }

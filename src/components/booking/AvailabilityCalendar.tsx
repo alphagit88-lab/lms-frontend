@@ -224,7 +224,7 @@ export default function AvailabilityCalendar({
       </div>
 
       {/* Time Grid */}
-      <div className="max-h-[500px] overflow-y-auto">
+      <div className="max-h-125 overflow-y-auto">
         {HOURS.map((hour) => (
           <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] sm:grid-cols-[80px_repeat(7,1fr)] border-b border-gray-100">
             {/* Time Label */}
@@ -244,7 +244,7 @@ export default function AvailabilityCalendar({
               return (
                 <div
                   key={dayIndex}
-                  className={`border-l border-gray-200 min-h-[52px] sm:min-h-[60px] relative ${
+                  className={`border-l border-gray-200 min-h-13 sm:min-h-15 relative ${
                     past ? 'bg-gray-50/50' : ''
                   }`}
                 >
@@ -279,7 +279,7 @@ export default function AvailabilityCalendar({
                       >
                         <div className="flex items-center gap-0.5">
                           {isSelected && (
-                            <svg className="w-3 h-3 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-3 h-3 text-blue-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           )}
