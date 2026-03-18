@@ -110,6 +110,49 @@ class AuthAPI {
       body: JSON.stringify(data),
     });
   }
+
+  async forgotPassword(email: string): Promise<{ message: string; resetToken?: string }> {
+    return this.fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(data: {
+    email: string;
+    token: string;
+    newPassword: string;
+  }): Promise<{ message: string }> {
+    return this.fetch('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async uploadProfilePicture(file: File): Promise<{ message: string; user: User }> {
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+
+    // Don't use this.fetch() because it sets Content-Type to JSON.
+    // For multipart/form-data the browser must set the boundary itself.
+    const response = await fetch(`${API_BASE_URL}/api/auth/profile-picture`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to upload profile picture');
+    }
+    return data;
+  }
+
+  async deleteProfilePicture(): Promise<{ message: string; user: User }> {
+    return this.fetch('/api/auth/profile-picture', {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const authAPI = new AuthAPI();

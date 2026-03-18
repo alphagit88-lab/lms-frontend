@@ -1,15 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import { getMyCourses, deleteCourse, togglePublishCourse, Course } from '@/lib/api/courses';
-import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AppLayout from '@/components/layout/AppLayout';
 
 function InstructorCoursesContent() {
-  const router = useRouter();
-  const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -40,7 +38,7 @@ function InstructorCoursesContent() {
     try {
       await deleteCourse(courseId);
       alert('Course deleted successfully');
-      loadCourses(); // Reload list
+      loadCourses();
     } catch (err: unknown) {
       const error = err instanceof Error ? err : new Error('Failed to delete course');
       alert(error.message || 'Failed to delete course');
@@ -51,7 +49,7 @@ function InstructorCoursesContent() {
     try {
       await togglePublishCourse(courseId, !currentStatus);
       alert(`Course ${!currentStatus ? 'published' : 'unpublished'} successfully`);
-      loadCourses(); // Reload list
+      loadCourses();
     } catch (err: unknown) {
       const error = err instanceof Error ? err : new Error('Failed to toggle publish status');
       alert(error.message || 'Failed to toggle publish status');
@@ -60,153 +58,161 @@ function InstructorCoursesContent() {
 
   const getStatusBadge = (course: Course) => {
     if (course.isPublished) {
-      return <span className="px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">Published</span>;
+      return <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Published</span>;
     }
-    return <span className="px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800">Draft</span>;
+    return <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200">Draft</span>;
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppLayout>
       {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Courses</h1>
-              <p className="mt-2 text-gray-600">Manage your courses and track student engagement</p>
-            </div>
-            <Link
-              href="/instructor/courses/create"
-              className="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
-            >
-              + Create Course
-            </Link>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">My Courses</h1>
+          <p className="text-sm text-slate-500 mt-1">Manage your courses and track student engagement</p>
+        </div>
+        <Link
+          href="/instructor/courses/create"
+          className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm self-start"
+        >
+          + Create Course
+        </Link>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-3 text-sm text-slate-500">Loading courses...</p>
           </div>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {courses.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <div className="text-6xl mb-4">📚</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No courses yet</h3>
-            <p className="text-gray-600 mb-6">
-              Create your first course and start sharing your knowledge with students
-            </p>
-            <Link
-              href="/instructor/courses/create"
-              className="inline-block px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
+      ) : courses.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center">
+          <svg className="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.206 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.794 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.794 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.206 18 16.5 18s-3.332.477-4.5 1.253" />
+          </svg>
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">No courses yet</h3>
+          <p className="text-slate-500 mb-6 text-sm">
+            Create your first course and start sharing your knowledge with students
+          </p>
+          <Link
+            href="/instructor/courses/create"
+            className="inline-block px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+          >
+            Create Your First Course
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {courses.map((course) => (
+            <div
+              key={course.id}
+              className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md transition"
             >
-              Create Your First Course
-            </Link>
-          </div>
-        ) : (
-          /* Courses List */
-          <div className="space-y-4">
-            {courses.map((course) => (
-              <div
-                key={course.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition"
-              >
-                <div className="flex items-start gap-6">
-                  {/* Thumbnail */}
-                  <div className="flex-shrink-0">
-                    {course.thumbnail ? (
-                      <img
-                        src={course.thumbnail}
-                        alt={course.title}
-                        className="w-40 h-24 object-cover rounded-lg"
-                      />
-                    ) : (
-                      <div className="w-40 h-24 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <span className="text-3xl">📚</span>
+              <div className="flex items-start gap-5">
+                {/* Thumbnail */}
+                <div className="shrink-0 hidden sm:block">
+                  {course.thumbnail ? (
+                    <Image
+                      src={course.thumbnail}
+                      alt={course.title}
+                      width={144}
+                      height={96}
+                      className="object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-36 h-24 bg-slate-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.206 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.794 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.794 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.206 18 16.5 18s-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 className="text-base font-semibold text-slate-900 truncate">{course.title}</h3>
+                        {course.medium && (
+                          <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-700 border border-blue-200 capitalize">
+                            {course.medium}
+                          </span>
+                        )}
+                        {getStatusBadge(course)}
                       </div>
-                    )}
+                      <p className="text-sm text-slate-500 line-clamp-2">
+                        {course.shortDescription || course.description}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-xl font-semibold text-gray-900 truncate">
-                            {course.title}
-                          </h3>
-                          {getStatusBadge(course)}
-                        </div>
-                        <p className="text-sm text-gray-600 line-clamp-2">
-                          {course.shortDescription || course.description}
-                        </p>
-                      </div>
-                    </div>
+                  {/* Stats */}
+                  <div className="flex items-center gap-5 mt-3 text-sm text-slate-500">
+                    <span className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      {course.enrollmentCount} students
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.206 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.794 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.794 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.206 18 16.5 18s-3.332.477-4.5 1.253" />
+                      </svg>
+                      {course.lessons?.length || 0} lessons
+                    </span>
+                    <span className="font-medium text-slate-900">${Number(course.price || 0).toFixed(2)}</span>
+                  </div>
 
-                    {/* Stats */}
-                    <div className="flex items-center gap-6 mt-4 text-sm text-gray-600">
-                      <div className="flex items-center">
-                        <span className="mr-1">👥</span>
-                        <span>{course.enrollmentCount} students</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="mr-1">📚</span>
-                        <span>{course.lessons?.length || 0} lessons</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="mr-1">💰</span>
-                        <span>${course.price.toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-3 mt-4">
-                      <Link
-                        href={`/courses/${course.id}`}
-                        className="text-sm text-gray-700 hover:text-gray-900 underline"
-                      >
-                        View
-                      </Link>
-                      <Link
-                        href={`/instructor/courses/${course.id}/edit`}
-                        className="text-sm text-blue-600 hover:text-blue-800 underline"
-                      >
-                        Edit
-                      </Link>
-                      <button
-                        onClick={() => handleTogglePublish(course.id, course.isPublished)}
-                        className="text-sm text-green-600 hover:text-green-800 underline"
-                      >
-                        {course.isPublished ? 'Unpublish' : 'Publish'}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(course.id, course.title)}
-                        className="text-sm text-red-600 hover:text-red-800 underline"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                  {/* Actions */}
+                  <div className="flex items-center gap-3 mt-4">
+                    <Link
+                      href={`/courses/${course.id}`}
+                      className="text-sm text-slate-600 hover:text-slate-900 font-medium transition"
+                    >
+                      View
+                    </Link>
+                    <Link
+                      href={`/instructor/courses/${course.id}/edit`}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium transition"
+                    >
+                      Edit
+                    </Link>
+                    <Link
+                      href={`/instructor/courses/${course.id}/lessons`}
+                      className="text-sm text-purple-600 hover:text-purple-700 font-medium transition"
+                    >
+                      Lessons
+                    </Link>
+                    <button
+                      onClick={() => handleTogglePublish(course.id, course.isPublished)}
+                      className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition"
+                    >
+                      {course.isPublished ? 'Unpublish' : 'Publish'}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(course.id, course.title)}
+                      className="text-sm text-red-600 hover:text-red-700 font-medium transition"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </AppLayout>
   );
 }
 

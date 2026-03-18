@@ -18,7 +18,7 @@ interface WeeklyCalendarProps {
   onNextWeek: () => void;
 }
 
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM to 8 PM
+const HOURS = Array.from({ length: 18 }, (_, i) => i + 7); // 7 AM to 12 AM
 
 export default function WeeklyCalendar({
   weekStart,
@@ -132,12 +132,14 @@ export default function WeeklyCalendar({
       </div>
 
       {/* Time Grid */}
-      <div className="max-h-[600px] overflow-y-auto">
+      <div className="max-h-150 overflow-y-auto">
         {HOURS.map((hour) => (
           <div key={hour} className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-gray-100">
             {/* Time Label */}
             <div className="p-2 text-right pr-3 text-xs text-gray-500 font-medium pt-3">
-              {hour === 12
+              {hour === 24
+                ? '12 AM'
+                : hour === 12
                 ? '12 PM'
                 : hour > 12
                 ? `${hour - 12} PM`
@@ -152,7 +154,7 @@ export default function WeeklyCalendar({
               return (
                 <div
                   key={dayIndex}
-                  className={`border-l border-gray-200 min-h-[60px] relative ${
+                  className={`border-l border-gray-200 min-h-15 relative ${
                     past ? 'bg-gray-50' : 'hover:bg-gray-50 cursor-pointer'
                   }`}
                   onClick={() => {

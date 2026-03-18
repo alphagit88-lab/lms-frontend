@@ -1,0 +1,227 @@
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+async function apiFetch(endpoint: string, options?: RequestInit) {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            ...options?.headers,
+        },
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'An error occurred');
+    }
+    return data;
+}
+
+/* ── Types ─────────────────────────────────────────── */
+
+export interface PlatformStats {
+    totalUsers: number;
+    students: number;
+    instructors: number;
+    parents: number;
+    admins: number;
+    totalCourses: number;
+    totalBookings: number;
+    pendingTeachers: number;
+    recentSignups: number;
+}
+
+export interface AdminUser {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    isActive: boolean;
+    emailVerified: boolean;
+    profilePicture: string | null;
+    bio: string | null;
+    lastLoginAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface UsersResponse {
+    users: AdminUser[];
+    total: number;
+    page: number;
+    totalPages: number;
+}
+
+export interface PendingTeacher {
+    id: string;
+    teacherId: string;
+    verified: boolean;
+    qualifications?: string | null;
+    specialization?: string | null;
+    yearsExperience?: number | null;
+    hourlyRate?: number | null;
+    subjects?: string | null;
+    teachingLanguages?: string | null;
+    createdAt: string;
+    teacher: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+    };
+}
+
+export interface AdminPayment {
+    id: string;
+    studentId: string;
+    courseId: string | null;
+    amount: number;
+    currency: string;
+    paymentMethod: string;
+    paymentType: string;
+    status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+    paymentStatus: string;
+    refundAmount: number | null;
+    refundDate: string | null;
+    transactionId: string | null;
+    bankSlipUrl: string | null;
+    createdAt: string;
+    student: { firstName: string; lastName: string; email: string };
+    instructor: { firstName: string; lastName: string; email: string } | null;
+    course: { title: string } | null;
+}
+
+export interface AdminEnrollment {
+    id: string;
+    studentId: string;
+    courseId: string;
+    enrolledAt: string;
+    progress: number;
+    student: { firstName: string; lastName: string; email: string };
+    course: { title: string };
+}
+
+export interface ManualPayment {
+    id: string;
+    userId: string;
+    amount: number;
+    currency: string;
+    paymentType: string;
+    paymentStatus: string;
+    bankSlipUrl?: string | null;
+    manualReviewNote?: string | null;
+    referenceId: string;
+    metadata?: { courseIds?: string[] } | null;
+    createdAt: string;
+    updatedAt: string;
+    user?: { firstName: string; lastName: string; email: string };
+}
+
+export interface AdminParentLink {
+    id: string;
+    studentId: string;
+    parentId: string;
+    status: 'pending' | 'accepted' | 'rejected';
+    createdAt: string;
+    student: { firstName: string; lastName: string; email: string };
+    parent: { firstName: string; lastName: string; email: string };
+}
+
+/* ── API Functions ─────────────────────────────────── */
+
+export async function getStats(): Promise<PlatformStats> {
+    return apiFetch('/api/admin/stats');
+}
+
+export async function getUsers(params?: {
+    role?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+}): Promise<UsersResponse> {
+    const qs = new URLSearchParams();
+    if (params?.role) qs.set('role', params.role);
+    if (params?.search) qs.set('search', params.search);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const query = qs.toString();
+    return apiFetch(`/api/admin/users${query ? `?${query}` : ''}`);
+}
+
+export async function toggleUserActive(userId: string): Promise<{ message: string; user: AdminUser }> {
+    return apiFetch(`/api/admin/users/${userId}/toggle-active`, { method: 'PATCH' });
+}
+
+export async function deleteUser(userId: string): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
+}
+
+export async function getPendingTeachers(): Promise<{ teachers: PendingTeacher[] }> {
+    return apiFetch('/api/admin/teachers/pending');
+}
+
+export async function verifyTeacher(teacherId: string): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/teachers/${teacherId}/verify`, { method: 'PATCH' });
+}
+
+export async function rejectTeacher(teacherId: string, reason?: string): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/teachers/${teacherId}/reject`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reason }),
+    });
+}
+
+export async function getPayments(params?: { page?: number; status?: string; method?: string }): Promise<{ payments: AdminPayment[], total: number, totalPages: number }> {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.status) qs.set('status', params.status);
+    if (params?.method) qs.set('method', params.method);
+    return apiFetch(`/api/admin/payments${qs.toString() ? `?${qs.toString()}` : ''}`);
+}
+
+export async function getEnrollments(params?: { page?: number }): Promise<{ enrollments: AdminEnrollment[], total: number, totalPages: number }> {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    return apiFetch(`/api/admin/enrollments${qs.toString() ? `?${qs.toString()}` : ''}`);
+}
+
+export async function confirmPayment(paymentId: string): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/payments/${paymentId}/confirm`, { method: 'POST' });
+}
+
+export async function cancelPayment(paymentId: string): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/payments/${paymentId}/cancel`, { method: 'POST' });
+}
+
+export async function getPendingManualPayments(): Promise<{ payments: ManualPayment[] }> {
+    return apiFetch('/api/admin/payments/bank-transfer/pending');
+}
+
+export async function reviewManualPayment(
+    paymentId: string,
+    action: 'approve' | 'reject',
+    note?: string
+): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/payments/bank-transfer/${paymentId}/review`, {
+        method: 'POST',
+        body: JSON.stringify({ action, note }),
+    });
+}
+
+export async function getParentLinks(params?: { page?: number }): Promise<{ links: AdminParentLink[], total: number, totalPages: number }> {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    return apiFetch(`/api/admin/parent-links${qs.toString() ? `?${qs.toString()}` : ''}`);
+}
+
+export async function createParentLink(data: { studentId: string, parentId: string, status?: string }): Promise<{ message: string, link: AdminParentLink }> {
+    return apiFetch('/api/admin/parent-links', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function removeParentLink(linkId: string): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/parent-links/${linkId}`, { method: 'DELETE' });
+}

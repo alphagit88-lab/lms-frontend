@@ -1,0 +1,189 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { getMyTeacherProfile, updateTeacherProfile } from '@/lib/api/profile';
+
+export default function PricingSettings() {
+  const [hourlyRate, setHourlyRate] = useState<number>(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getMyTeacherProfile()
+      .then((profile) => {
+        if (profile) setHourlyRate(profile.hourlyRate || 0);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load profile'))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setSuccessMessage('');
+    setError(null);
+    try {
+      await updateTeacherProfile({ hourlyRate });
+      setSuccessMessage('Pricing updated successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update pricing');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <div className="w-6 h-6 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 text-sm font-medium">
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {error}
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="bg-emerald-50 text-emerald-700 p-4 rounded-2xl border border-emerald-100 flex items-center gap-3 text-sm font-medium">
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {successMessage}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Main Form */}
+        <div className="md:col-span-2 space-y-6">
+          <div className="bg-white rounded-3xl p-8 border border-slate-200/60 shadow-xl shadow-slate-200/40">
+            <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Base Rate
+            </h3>
+
+            <form onSubmit={handleSave} className="space-y-6">
+              <div>
+                <label htmlFor="pricingHourlyRate" className="block text-sm font-semibold text-slate-700 mb-2">
+                  Default Hourly Rate (LKR)
+                </label>
+                <p className="text-sm text-slate-500 mb-4">
+                  This rate is used as the default price when you create new availability slots. You can override it per slot.
+                </p>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span className="text-slate-400 font-medium">LKR</span>
+                  </div>
+                  <input
+                    type="number"
+                    id="pricingHourlyRate"
+                    required
+                    min="0"
+                    step="100"
+                    value={hourlyRate}
+                    onChange={(e) => setHourlyRate(parseFloat(e.target.value) || 0)}
+                    className="block w-full pl-16 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-shadow font-medium text-slate-900"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-semibold hover:bg-slate-800 transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Pricing'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Package Discounts */}
+          <div className="bg-slate-900 rounded-3xl p-8 shadow-xl relative overflow-hidden text-white">
+            <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+              <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              Package Discounts
+            </h3>
+            <p className="text-sm text-slate-300 mb-6 leading-relaxed">
+              The platform automatically applies discounts when students book multiple sessions at once.
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/10 p-4 rounded-2xl border border-white/10">
+                <p className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">3–4 Sessions</p>
+                <p className="text-2xl font-bold">5% Off</p>
+              </div>
+              <div className="bg-white/10 p-4 rounded-2xl border border-white/10">
+                <p className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">5+ Sessions</p>
+                <p className="text-2xl font-bold">10% Off</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          <div className="bg-emerald-50 rounded-3xl p-6 border border-emerald-100">
+            <h4 className="text-sm font-bold text-emerald-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Commission Info
+            </h4>
+            <p className="text-sm text-emerald-800 leading-relaxed mb-4">
+              The platform takes a standard <strong>10% commission</strong> on all transactions. You keep 90% of your earnings.
+            </p>
+            <div className="bg-white/60 p-4 rounded-xl">
+              <p className="text-xs text-emerald-700 font-medium mb-1">Your payout per hour:</p>
+              <p className="text-xl font-bold text-emerald-900">
+                {hourlyRate > 0 ? `LKR ${(hourlyRate * 0.9).toFixed(2)}` : 'LKR 0.00'}
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 rounded-3xl p-6 border border-blue-100">
+            <h4 className="text-sm font-bold text-blue-900 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Best Practices
+            </h4>
+            <ul className="text-sm text-blue-800 space-y-3 leading-relaxed">
+              <li className="flex gap-2">
+                <span className="text-blue-500">•</span>
+                Research average rates in your subject to stay competitive.
+              </li>
+              <li className="flex gap-2">
+                <span className="text-blue-500">•</span>
+                Start lower to build reviews, then increase gradually.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
