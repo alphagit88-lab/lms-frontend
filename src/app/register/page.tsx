@@ -24,6 +24,8 @@ export default function RegisterPage() {
     if (!authLoading && user) {
       if (user.role === 'admin') {
         router.push('/admin');
+      } else if (user.role === 'instructor') {
+        router.push('/instructor/onboarding');
       } else {
         router.push('/dashboard');
       }
@@ -57,6 +59,8 @@ export default function RegisterPage() {
 
       if (user.role === 'admin') {
         router.push('/admin');
+      } else if (user.role === 'instructor') {
+        router.push('/instructor/onboarding');
       } else {
         router.push('/dashboard');
       }
@@ -84,211 +88,277 @@ export default function RegisterPage() {
   ];
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-indigo-600 via-purple-600 to-blue-700 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-60" />
-        <div className="relative flex flex-col justify-center items-center w-full p-12 text-white">
-          <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-8">
-            <span className="text-3xl font-semibold">L</span>
-          </div>
-          <h1 className="text-4xl font-semibold mb-4">Join LMS Today</h1>
-          <p className="text-blue-200 text-center max-w-sm text-lg leading-relaxed font-medium">
-            Start your journey in learning or teaching with our modern platform.
-          </p>
-          <div className="mt-12 space-y-4 w-full max-w-xs">
-            {['Expert teachers from across Sri Lanka', 'Interactive live sessions', 'Track progress and achievements'].map((feature, i) => (
-              <div key={i} className="flex items-center gap-3 text-blue-100">
-                <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <span className="text-sm">{feature}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden">
+      {/* Background effects (match homepage vibe) */}
+      <div className="absolute inset-0">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-225 h-225 bg-blue-600/20 rounded-full blur-[120px]" />
+        <div className="absolute top-1/3 left-1/4 w-105 h-105 bg-violet-600/15 rounded-full blur-[100px]" />
+        <div className="absolute top-1/4 right-1/4 w-90 h-90 bg-indigo-500/10 rounded-full blur-[80px]" />
       </div>
 
-      {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12 bg-white overflow-y-auto">
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex justify-center mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-white text-xl font-bold">L</span>
+      {/* Subtle grid overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+          backgroundSize: "60px 60px",
+        }}
+      />
+
+      <div className="relative min-h-screen grid lg:grid-cols-2">
+        {/* Left Panel - Branding */}
+        <div className="hidden lg:flex items-center justify-center px-10 py-16">
+          <div className="max-w-xl w-full">
+            <Link href="/" className="inline-flex items-center gap-3 group">
+              <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-shadow">
+                <span className="text-white font-bold text-sm">L</span>
+              </div>
+              <span className="text-lg font-bold text-white tracking-tight group-hover:text-white/90 transition-colors">
+                LMS
+              </span>
+            </Link>
+
+            <div className="mt-8 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-300 text-xs font-semibold tracking-wide uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+              Start in minutes
+            </div>
+
+            <h1 className="mt-6 text-4xl xl:text-5xl font-extrabold tracking-tight leading-[1.1]">
+              Join LMS today.
+              <br />
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 via-violet-400 to-indigo-400">
+                Learn, teach, or monitor
+              </span>
+            </h1>
+            <p className="mt-4 text-slate-300 text-base leading-relaxed max-w-md">
+              Create your account to book live sessions, manage courses, and track progress — all in one platform.
+            </p>
+
+            <div className="mt-8 space-y-3 max-w-md">
+              {[
+                "Expert teachers from across Sri Lanka",
+                "Interactive live sessions and recordings",
+                "Analytics to track progress and outcomes",
+              ].map((feature) => (
+                <div
+                  key={feature}
+                  className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-3"
+                >
+                  <div className="w-8 h-8 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-slate-200">{feature}</span>
+                </div>
+              ))}
             </div>
           </div>
+        </div>
 
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-semibold text-slate-900">
-              Create your account
-            </h2>
-            <p className="text-slate-500 mt-2 font-medium">
-              Get started in just a few steps
+        {/* Right Panel - Form */}
+        <div className="flex items-center justify-center px-6 py-14">
+          <div className="w-full max-w-md">
+            {/* Mobile logo */}
+            <div className="lg:hidden flex justify-center mb-8">
+              <Link href="/" className="inline-flex items-center gap-3">
+                <div className="w-11 h-11 bg-linear-to-br from-blue-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                  <span className="text-white font-bold text-sm">L</span>
+                </div>
+                <span className="text-lg font-bold tracking-tight">LMS</span>
+              </Link>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl shadow-black/40 overflow-hidden">
+              <div className="px-6 sm:px-8 pt-8 pb-6 border-b border-white/10">
+                <h2 className="text-2xl font-bold tracking-tight text-white">Create account</h2>
+                <p className="text-slate-400 mt-1 text-sm">Get started in just a few steps.</p>
+              </div>
+
+              <div className="px-6 sm:px-8 py-6 space-y-6">
+                {error && (
+                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/25">
+                    <svg className="w-5 h-5 text-red-300 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm text-red-200 leading-relaxed">{error}</p>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  {/* Name Fields */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="firstName" className="block text-sm font-medium text-slate-200 mb-2">
+                        First name
+                      </label>
+                      <input
+                        id="firstName"
+                        name="firstName"
+                        type="text"
+                        required
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/40 transition"
+                        placeholder="John"
+                        autoComplete="given-name"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="lastName" className="block text-sm font-medium text-slate-200 mb-2">
+                        Last name
+                      </label>
+                      <input
+                        id="lastName"
+                        name="lastName"
+                        type="text"
+                        required
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/40 transition"
+                        placeholder="Doe"
+                        autoComplete="family-name"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-slate-200 mb-2">
+                      Email
+                    </label>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/40 transition"
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                    />
+                  </div>
+
+                  {/* Role Selector */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-200 mb-2">
+                      I want to
+                    </label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {roleOptions.map((role) => {
+                        const selected = formData.role === role.value;
+                        const short =
+                          role.value === 'student' ? 'Learn' : role.value === 'instructor' ? 'Teach' : 'Monitor';
+                        return (
+                          <button
+                            key={role.value}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, role: role.value as typeof formData.role })}
+                            className={[
+                              "p-3 rounded-2xl border text-left transition-all group",
+                              selected
+                                ? "border-blue-500/50 bg-blue-500/10 shadow-lg shadow-blue-500/10"
+                                : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20",
+                            ].join(" ")}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="text-lg">{role.icon}</div>
+                              {selected && (
+                                <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                            <div className={`mt-1 text-xs font-semibold ${selected ? "text-blue-200" : "text-slate-200"}`}>
+                              {short}
+                            </div>
+                            <div className="mt-0.5 text-[11px] leading-snug text-slate-500 line-clamp-2">
+                              {role.desc}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-slate-200 mb-2">
+                      Password
+                    </label>
+                    <input
+                      id="password"
+                      name="password"
+                      type="password"
+                      required
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/40 transition"
+                      placeholder="Min. 8 characters"
+                      autoComplete="new-password"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-200 mb-2">
+                      Confirm password
+                    </label>
+                    <input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      required
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/40 transition"
+                      placeholder="Re-enter your password"
+                      autoComplete="new-password"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3.5 rounded-2xl font-semibold text-sm bg-linear-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 transition-all shadow-xl shadow-blue-700/25 hover:shadow-blue-600/35 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        Creating account...
+                      </span>
+                    ) : (
+                      'Create account'
+                    )}
+                  </button>
+                </form>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-white/10" />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="px-3 bg-transparent text-slate-500">
+                      Already have an account?
+                    </span>
+                  </div>
+                </div>
+
+                <Link
+                  href="/login"
+                  className="block w-full text-center py-3 rounded-2xl border border-white/10 bg-white/5 text-slate-200 font-semibold hover:bg-white/10 hover:border-white/20 transition"
+                >
+                  Sign in
+                </Link>
+              </div>
+            </div>
+
+            <p className="text-center mt-8 text-xs text-slate-600">
+              &copy; 2026 LMS. All rights reserved.
             </p>
           </div>
-
-          <div className="space-y-6">
-            {error && (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
-                <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Name Fields */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-slate-700 mb-2">
-                    First Name
-                  </label>
-                  <input
-                    id="firstName"
-                    name="firstName"
-                    type="text"
-                    required
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="John"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-slate-700 mb-2">
-                    Last Name
-                  </label>
-                  <input
-                    id="lastName"
-                    name="lastName"
-                    type="text"
-                    required
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="Doe"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
-                  Email Address
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  placeholder="you@example.com"
-                />
-              </div>
-
-              {/* Role Selector */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  I want to
-                </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {roleOptions.map((role) => (
-                    <button
-                      key={role.value}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, role: role.value as typeof formData.role })}
-                      className={`p-3 rounded-xl border-2 text-center transition-all ${formData.role === role.value
-                        ? 'border-blue-500 bg-blue-50 shadow-sm'
-                        : 'border-slate-200 hover:border-slate-300'
-                        }`}
-                    >
-                      <div className="text-xl mb-1">{role.icon}</div>
-                      <div className={`text-xs font-semibold ${formData.role === role.value ? 'text-blue-700' : 'text-slate-700'}`}>
-                        {role.value === 'student' ? 'Learn' : role.value === 'instructor' ? 'Teach' : 'Monitor'}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  placeholder="Min. 8 characters"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-2">
-                  Confirm Password
-                </label>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  placeholder="Re-enter your password"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Creating Account...
-                  </span>
-                ) : (
-                  'Create Account'
-                )}
-              </button>
-            </form>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-3 bg-white text-slate-500">
-                  Already have an account?
-                </span>
-              </div>
-            </div>
-
-            <Link
-              href="/login"
-              className="block w-full text-center py-3 rounded-xl border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition"
-            >
-              Sign In
-            </Link>
-          </div>
-
-          <p className="text-center mt-8 text-xs text-slate-400">
-            &copy; 2026 LMS. All rights reserved.
-          </p>
         </div>
       </div>
     </div>

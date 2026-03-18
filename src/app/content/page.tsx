@@ -245,7 +245,7 @@ export default function ContentDiscoveryPage() {
                       </span>
                       {content.isPaid ? (
                         <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded font-semibold">
-                          ${content.price?.toFixed(2)}
+                          ${Number(content.price ?? 0).toFixed(2)}
                         </span>
                       ) : (
                         <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded font-semibold">

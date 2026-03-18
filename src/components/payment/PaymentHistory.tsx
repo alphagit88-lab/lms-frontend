@@ -6,7 +6,7 @@ import { ArrowUpRight, ArrowDownLeft, Receipt } from "lucide-react";
 
 interface Transaction {
     id: string;
-    transactionType: "payment" | "refund" | "payout" | "platform_fee";
+    transactionType: "payment" | "payhere" | "manual" | "refund" | "payout" | "platform_fee";
     amount: number;
     description: string;
     createdAt: string;
@@ -35,7 +35,10 @@ export default function PaymentHistory() {
     const getTypeIcon = (type: string) => {
         switch (type) {
             case "payment":
+            case "payhere":
                 return <Receipt className="w-5 h-5 text-blue-500" />;
+            case "manual":
+                return <Receipt className="w-5 h-5 text-amber-500" />;
             case "payout":
                 return <ArrowUpRight className="w-5 h-5 text-emerald-500" />;
             case "refund":
@@ -49,9 +52,11 @@ export default function PaymentHistory() {
 
     const getTypeColor = (type: string) => {
         switch (type) {
-            case "payment": return "bg-blue-50 text-blue-700";
+            case "payment":
+            case "payhere": return "bg-blue-50 text-blue-700";
+            case "manual": return "bg-amber-50 text-amber-700";
             case "payout": return "bg-emerald-50 text-emerald-700";
-            case "refund": return "bg-amber-50 text-amber-700";
+            case "refund": return "bg-purple-50 text-purple-700";
             case "platform_fee": return "bg-slate-100 text-slate-700";
             default: return "bg-slate-50 text-slate-700";
         }

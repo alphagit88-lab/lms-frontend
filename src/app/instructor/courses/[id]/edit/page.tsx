@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   getCourseById,
@@ -12,10 +13,15 @@ import {
   Course,
   Category,
   UpdateCourseData,
+  uploadCourseMedia,
+  deleteCourseMedia,
 } from '@/lib/api/courses';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import ManageLessonsInline from '@/components/instructor/ManageLessonsInline';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 function EditCourseContent() {
   const params = useParams();
@@ -28,6 +34,10 @@ function EditCourseContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [thumbnailSource, setThumbnailSource] = useState<'url' | 'upload'>('url');
+  const [videoSource, setVideoSource] = useState<'url' | 'upload'>('url');
 
   const [formData, setFormData] = useState<UpdateCourseData>({
     title: '',
@@ -53,6 +63,13 @@ function EditCourseContent() {
       setLoading(true);
       const data = await getCourseById(courseId);
       setCourse(data);
+
+      const normalizeUrl = (url?: string) => {
+        if (!url) return '';
+        if (url.startsWith('/uploads/')) return API_URL + url;
+        return url;
+      };
+
       setFormData({
         title: data.title || '',
         slug: data.slug || '',
@@ -61,10 +78,16 @@ function EditCourseContent() {
         categoryId: data.category?.id || '',
         level: data.level || 'beginner',
         price: data.price || 0,
-        thumbnail: data.thumbnail || '',
-        previewVideoUrl: data.previewVideoUrl || '',
+        thumbnail: normalizeUrl(data.thumbnail),
+        previewVideoUrl: normalizeUrl(data.previewVideoUrl),
         medium: data.medium || 'english',
       });
+      if (data.thumbnail && data.thumbnail.includes('/uploads/')) {
+        setThumbnailSource('upload');
+      }
+      if (data.previewVideoUrl && data.previewVideoUrl.includes('/uploads/')) {
+        setVideoSource('upload');
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load course');
     } finally {
@@ -87,6 +110,50 @@ function EditCourseContent() {
       ...prev,
       [name]: name === 'price' ? parseFloat(value) || 0 : value,
     }));
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'thumbnail' | 'previewVideoUrl') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 100 * 1024 * 1024) {
+       setError(`File size exceeds the 100MB limit.`);
+       return;
+    }
+
+    try {
+      if (field === 'thumbnail') setUploadingThumbnail(true);
+      if (field === 'previewVideoUrl') setUploadingVideo(true);
+      setError('');
+
+      const res = await uploadCourseMedia(file);
+      setFormData((prev) => ({
+        ...prev,
+        [field]: API_URL + res.url,
+      }));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : `Failed to upload ${field}`);
+    } finally {
+      if (field === 'thumbnail') setUploadingThumbnail(false);
+      if (field === 'previewVideoUrl') setUploadingVideo(false);
+      // Reset input value so same file can be selected again if needed
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveMedia = async (field: 'thumbnail' | 'previewVideoUrl') => {
+    const url = formData[field];
+    if (!url) return;
+
+    try {
+      if (url.includes('/uploads/')) {
+        await deleteCourseMedia(url);
+      }
+      setFormData((prev) => ({ ...prev, [field]: '' }));
+    } catch (err: unknown) {
+      console.error('Remove media error:', err);
+      setFormData((prev) => ({ ...prev, [field]: '' }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -221,7 +288,8 @@ function EditCourseContent() {
         )}
       </div>
 
-      <div className="max-w-3xl">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-8 items-start">
+        <div className="space-y-6">
         {/* Error */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 text-sm">{error}</div>
@@ -229,7 +297,18 @@ function EditCourseContent() {
 
         {/* Stats */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-6">
-          <h2 className="text-sm font-semibold text-slate-900 mb-4">Course Stats</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-slate-900">Course Stats</h2>
+            <Link
+              href={`/instructor/courses/${courseId}/lessons`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Manage Lessons
+            </Link>
+          </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
               <div className="text-2xl font-bold text-slate-900">{course?.enrollmentCount || 0}</div>
@@ -260,7 +339,7 @@ function EditCourseContent() {
             <label htmlFor="slug" className="block text-sm font-medium text-slate-700 mb-1.5">
               Course Slug <span className="text-red-500">*</span>
             </label>
-            <input type="text" id="slug" name="slug" value={formData.slug} onChange={handleChange} required pattern="[a-z0-9-]+" className={inputClasses} />
+            <input type="text" id="slug" name="slug" value={formData.slug} onChange={handleChange} required pattern="[a-z0-9\-]+" className={inputClasses} />
             <p className="mt-1 text-xs text-slate-400">URL-friendly version</p>
           </div>
 
@@ -316,13 +395,95 @@ function EditCourseContent() {
           </div>
 
           <div>
-            <label htmlFor="thumbnail" className="block text-sm font-medium text-slate-700 mb-1.5">Thumbnail Image URL</label>
-            <input type="url" id="thumbnail" name="thumbnail" value={formData.thumbnail} onChange={handleChange} className={inputClasses} />
+            <div className="flex justify-between items-center mb-1.5">
+              <label htmlFor="thumbnail" className="block text-sm font-medium text-slate-700">Thumbnail Image</label>
+              <select 
+                value={thumbnailSource} 
+                onChange={(e) => setThumbnailSource(e.target.value as 'url' | 'upload')}
+                className="text-xs border border-slate-300 rounded-md px-2 py-1 outline-none text-slate-600 bg-white cursor-pointer"
+              >
+                <option value="url">Enter URL</option>
+                <option value="upload">Upload File</option>
+              </select>
+            </div>
+            
+            {thumbnailSource === 'url' ? (
+              <input type="url" id="thumbnail" name="thumbnail" value={formData.thumbnail} onChange={handleChange} className={inputClasses} placeholder="https://..." />
+            ) : (
+              <div className="flex gap-2">
+                <input type="text" readOnly value={formData.thumbnail || ''} className={`${inputClasses} bg-slate-50 text-slate-500 font-normal`} placeholder="No file chosen" />
+                <label className={`flex items-center justify-center px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium bg-slate-50 hover:bg-slate-100 cursor-pointer transition whitespace-nowrap ${uploadingThumbnail ? 'opacity-50 pointer-events-none' : ''}`}>
+                  {uploadingThumbnail ? 'Uploading...' : 'Browse'}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, 'thumbnail')} disabled={uploadingThumbnail} />
+                </label>
+              </div>
+            )}
+            {formData.thumbnail && (
+              <div className="mt-3 relative group">
+                <div className="w-full h-48 md:h-64 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 relative">
+                  <Image 
+                    src={formData.thumbnail} 
+                    alt="Thumbnail preview" 
+                    fill 
+                    className="object-cover" 
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} 
+                  />
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => handleRemoveMedia('thumbnail')}
+                  className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
+                  title="Remove Image"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
 
           <div>
-            <label htmlFor="previewVideoUrl" className="block text-sm font-medium text-slate-700 mb-1.5">Preview Video URL</label>
-            <input type="url" id="previewVideoUrl" name="previewVideoUrl" value={formData.previewVideoUrl} onChange={handleChange} className={inputClasses} />
+            <div className="flex justify-between items-center mb-1.5">
+              <label htmlFor="previewVideoUrl" className="block text-sm font-medium text-slate-700">Preview Video</label>
+              <select 
+                value={videoSource} 
+                onChange={(e) => setVideoSource(e.target.value as 'url' | 'upload')}
+                className="text-xs border border-slate-300 rounded-md px-2 py-1 outline-none text-slate-600 bg-white cursor-pointer"
+              >
+                <option value="url">Enter URL</option>
+                <option value="upload">Upload File</option>
+              </select>
+            </div>
+            
+            {videoSource === 'url' ? (
+              <input type="url" id="previewVideoUrl" name="previewVideoUrl" value={formData.previewVideoUrl} onChange={handleChange} className={inputClasses} placeholder="https://..." />
+            ) : (
+              <div className="flex gap-2">
+                <input type="text" readOnly value={formData.previewVideoUrl || ''} className={`${inputClasses} bg-slate-50 text-slate-500 font-normal`} placeholder="No file chosen" />
+                <label className={`flex items-center justify-center px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium bg-slate-50 hover:bg-slate-100 cursor-pointer transition whitespace-nowrap ${uploadingVideo ? 'opacity-50 pointer-events-none' : ''}`}>
+                  {uploadingVideo ? 'Uploading...' : 'Browse'}
+                  <input type="file" accept="video/mp4,video/webm" className="hidden" onChange={(e) => handleFileUpload(e, 'previewVideoUrl')} disabled={uploadingVideo} />
+                </label>
+              </div>
+            )}
+            {formData.previewVideoUrl && (
+              <div className="mt-3 relative group">
+                <div className="w-full h-auto rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video">
+                  <video src={formData.previewVideoUrl} controls className="w-full h-full object-contain" onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }} />
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => handleRemoveMedia('previewVideoUrl')}
+                  className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 z-10"
+                  title="Remove Video"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-5 border-t border-slate-100">
@@ -348,8 +509,8 @@ function EditCourseContent() {
           <button
             onClick={handleTogglePublish}
             className={`px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm ${course?.isPublished
-                ? 'bg-amber-500 text-white hover:bg-amber-600'
-                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+              ? 'bg-amber-500 text-white hover:bg-amber-600'
+              : 'bg-emerald-600 text-white hover:bg-emerald-700'
               }`}
           >
             {course?.isPublished ? 'Unpublish Course' : 'Publish Course'}
@@ -368,6 +529,12 @@ function EditCourseContent() {
           >
             Delete Course
           </button>
+        </div>
+        </div>
+        
+        {/* RIGHT COLUMN: Modern Manage Lessons Panel */}
+        <div className="xl:sticky xl:top-24 z-10">
+          <ManageLessonsInline courseId={courseId} />
         </div>
       </div>
     </AppLayout>

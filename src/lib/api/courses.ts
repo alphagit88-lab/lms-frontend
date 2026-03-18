@@ -47,8 +47,28 @@ export interface Course {
   instructor?: Instructor;
   category?: Category;
   lessons?: Lesson[];
+  exams?: Exam[];
   isEnrolled?: boolean;
   medium?: 'english' | 'sinhala' | 'tamil' | string;
+}
+
+export interface Exam {
+  id: string;
+  courseId: string;
+  title: string;
+  slug?: string;
+  description?: string;
+  examType: 'quiz' | 'assignment' | 'test' | 'final_exam' | 'practice';
+  totalQuestions: number;
+  totalMarks: number;
+  passingMarks?: number;
+  passingScore?: number;
+  durationMinutes?: number;
+  duration?: number;
+  isPublished: boolean;
+  maxAttempts?: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Lesson {
@@ -106,6 +126,66 @@ export interface UpdateCourseData {
 // API Functions
 
 /**
+ * Upload course media (thumbnail/preview)
+ */
+export async function uploadCourseMedia(file: File): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE_URL}/api/courses/upload-media`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include', // Needed if authenticating via cookies
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to upload media');
+  }
+
+  return response.json();
+}
+
+/**
+ * Helper to ensure local file paths are absolute URLs
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function normalizeCourseUrls(course: any): any {
+  if (!course) return course;
+  const c = { ...course };
+  if (c.thumbnail && c.thumbnail.startsWith('/uploads/')) {
+    c.thumbnail = API_BASE_URL + c.thumbnail;
+  }
+  if (c.previewVideoUrl && c.previewVideoUrl.startsWith('/uploads/')) {
+    c.previewVideoUrl = API_BASE_URL + c.previewVideoUrl;
+  }
+  // Also normalize instructor profile picture if it exists
+  if (c.instructor && c.instructor.profilePicture && c.instructor.profilePicture.startsWith('/uploads/')) {
+    c.instructor.profilePicture = API_BASE_URL + c.instructor.profilePicture;
+  }
+  return c;
+}
+
+/**
+ * Delete course media
+ */
+export async function deleteCourseMedia(url: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/courses/delete-media`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ url }),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to remove media');
+  }
+}
+
+/**
  * Get all courses with optional filters
  */
 export async function getCourses(filters?: CourseFilters): Promise<Course[]> {
@@ -131,7 +211,7 @@ export async function getCourses(filters?: CourseFilters): Promise<Course[]> {
   }
 
   const data = await response.json();
-  return data.courses;
+  return (data.courses || []).map(normalizeCourseUrls);
 }
 
 /**
@@ -149,7 +229,9 @@ export async function getCourseById(id: string): Promise<Course> {
   }
 
   const data = await response.json();
-  return data.course;
+  // isEnrolled comes as a separate top-level field from the backend
+  const normalizedCourse = normalizeCourseUrls(data.course);
+  return { ...normalizedCourse, isEnrolled: data.isEnrolled ?? false };
 }
 
 /**
@@ -167,7 +249,7 @@ export async function getMyCourses(): Promise<Course[]> {
   }
 
   const data = await response.json();
-  return data.courses;
+  return (data.courses || []).map(normalizeCourseUrls);
 }
 
 /**
@@ -189,7 +271,7 @@ export async function createCourse(courseData: CreateCourseData): Promise<Course
   }
 
   const data = await response.json();
-  return data.course;
+  return normalizeCourseUrls(data.course);
 }
 
 /**
@@ -211,7 +293,7 @@ export async function updateCourse(id: string, courseData: UpdateCourseData): Pr
   }
 
   const data = await response.json();
-  return data.course;
+  return normalizeCourseUrls(data.course);
 }
 
 /**
@@ -267,4 +349,62 @@ export async function getCategories(): Promise<Category[]> {
 
   const data = await response.json();
   return data.categories;
+}
+
+// ── Lesson API helpers ──────────────────────────────────────────────
+
+export interface CreateLessonData {
+  title: string;
+  slug: string;
+  content?: string;
+  videoUrl?: string;
+  durationMinutes?: number;
+  isPreview?: boolean;
+}
+
+export interface UpdateLessonData {
+  title?: string;
+  slug?: string;
+  content?: string;
+  videoUrl?: string;
+  durationMinutes?: number;
+  isPreview?: boolean;
+  isPublished?: boolean;
+  sortOrder?: number;
+}
+
+async function lessonApiFetch(endpoint: string, options?: RequestInit) {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'An error occurred');
+  return data;
+}
+
+export async function getLessonsForCourse(courseId: string): Promise<Lesson[]> {
+  const data = await lessonApiFetch(`/api/lessons/courses/${courseId}/lessons`);
+  return data.lessons;
+}
+
+export async function createLesson(courseId: string, lessonData: CreateLessonData): Promise<Lesson> {
+  const data = await lessonApiFetch(`/api/lessons/courses/${courseId}/lessons`, {
+    method: 'POST',
+    body: JSON.stringify(lessonData),
+  });
+  return data.lesson;
+}
+
+export async function updateLesson(lessonId: string, updates: UpdateLessonData): Promise<Lesson> {
+  const data = await lessonApiFetch(`/api/lessons/${lessonId}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+  return data.lesson;
+}
+
+export async function deleteLesson(lessonId: string): Promise<void> {
+  await lessonApiFetch(`/api/lessons/${lessonId}`, { method: 'DELETE' });
 }

@@ -50,6 +50,7 @@ export interface CreateSlotData {
   price?: number;
   maxBookings?: number;
   notes?: string;
+  targetTeacherId?: string;
 }
 
 export interface UpdateSlotData {
@@ -58,16 +59,20 @@ export interface UpdateSlotData {
   price?: number;
   notes?: string;
   status?: 'available' | 'booked' | 'blocked';
+  isRecurring?: boolean;
+  recurrenceEndDate?: string;
 }
 
 export interface CreateRecurringData {
   dayOfWeek: string;
-  startTime: string;       // HH:mm format
+  startTime: string;        // HH:mm format
   endTime: string;          // HH:mm format
+  startDate?: string;       // YYYY-MM-DD — optional, defaults to today; can be past
   recurrenceEndDate: string; // YYYY-MM-DD
   price?: number;
   maxBookings?: number;
   notes?: string;
+  targetTeacherId?: string;
 }
 
 export interface RecurringResponse {
@@ -91,7 +96,8 @@ async function apiFetch(endpoint: string, options?: RequestInit) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.error || 'An error occurred');
+    const err = Object.assign(new Error(data.error || 'An error occurred'), { status: response.status });
+    throw err;
   }
 
   return data;
@@ -113,15 +119,19 @@ export async function createSlot(slotData: CreateSlotData): Promise<Availability
 /**
  * Get teacher's own slots with optional filters
  */
-export async function getMySlots(filters?: {
+export interface getMySlotsFilters {
   startDate?: string;
   endDate?: string;
   status?: string;
-}): Promise<AvailabilitySlot[]> {
+  teacherId?: string;
+}
+
+export async function getMySlots(filters?: getMySlotsFilters): Promise<AvailabilitySlot[]> {
   const params = new URLSearchParams();
   if (filters?.startDate) params.append('startDate', filters.startDate);
   if (filters?.endDate) params.append('endDate', filters.endDate);
   if (filters?.status) params.append('status', filters.status);
+  if (filters?.teacherId) params.append('teacherId', filters.teacherId);
 
   const query = params.toString() ? `?${params}` : '';
   const data = await apiFetch(`/api/availability/slots/my${query}`);
@@ -185,6 +195,7 @@ export async function cancelFutureRecurring(params: {
   dayOfWeek: string;
   startTime?: string;
   endTime?: string;
+  teacherId?: string;
 }): Promise<{ message: string; deletedCount: number; protectedSlots: { id: string; date: string; bookings: number }[] }> {
   return apiFetch('/api/availability/recurring/cancel', {
     method: 'POST',

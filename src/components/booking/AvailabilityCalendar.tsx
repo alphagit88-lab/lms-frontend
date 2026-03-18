@@ -95,6 +95,10 @@ export default function AvailabilityCalendar({
     return date < today;
   };
 
+  const isSlotPast = (slot: AvailabilitySlot) => {
+    return new Date(slot.startTime) < new Date();
+  };
+
   const getSlotsForHour = (date: Date, hour: number): AvailabilitySlot[] => {
     const dateKey = toDateKey(date);
     const daySlots = slotsByDate[dateKey] || [];
@@ -134,8 +138,9 @@ export default function AvailabilityCalendar({
     return `${startMonth} ${start.getDate()} – ${endMonth} ${end.getDate()}, ${year}`;
   }, [weekDays]);
 
-  // Count available slots this week
-  const availableCount = slots.length;
+  // Count only future (bookable) slots this week
+  const now = new Date();
+  const availableCount = slots.filter((s) => new Date(s.startTime) >= now).length;
 
   if (loading) {
     return (
@@ -219,7 +224,7 @@ export default function AvailabilityCalendar({
       </div>
 
       {/* Time Grid */}
-      <div className="max-h-[500px] overflow-y-auto">
+      <div className="max-h-125 overflow-y-auto">
         {HOURS.map((hour) => (
           <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] sm:grid-cols-[80px_repeat(7,1fr)] border-b border-gray-100">
             {/* Time Label */}
@@ -239,7 +244,7 @@ export default function AvailabilityCalendar({
               return (
                 <div
                   key={dayIndex}
-                  className={`border-l border-gray-200 min-h-[52px] sm:min-h-[60px] relative ${
+                  className={`border-l border-gray-200 min-h-13 sm:min-h-15 relative ${
                     past ? 'bg-gray-50/50' : ''
                   }`}
                 >
@@ -249,19 +254,23 @@ export default function AvailabilityCalendar({
                     const isHovered = hoveredSlot === slot.id;
                     const isSelected = multiSelectMode && selectedSlotIds.includes(slot.id);
                     const spotsLeft = slot.maxBookings - slot.currentBookings;
+                    const slotPast = isSlotPast(slot);
 
                     return (
                       <div
                         key={slot.id}
-                        onClick={() => onSlotSelect(slot)}
-                        onMouseEnter={() => setHoveredSlot(slot.id)}
+                        onClick={() => !slotPast && onSlotSelect(slot)}
+                        onMouseEnter={() => !slotPast && setHoveredSlot(slot.id)}
                         onMouseLeave={() => setHoveredSlot(null)}
-                        className={`absolute inset-x-0.5 sm:inset-x-1 rounded-md p-1 sm:p-1.5 cursor-pointer transition-all z-10 border ${
-                          isSelected
-                            ? 'bg-blue-100 border-blue-400 shadow-md ring-2 ring-blue-300'
+                        title={slotPast ? 'This slot has already passed' : undefined}
+                        className={`absolute inset-x-0.5 sm:inset-x-1 rounded-md p-1 sm:p-1.5 transition-all z-10 border ${
+                          slotPast
+                            ? 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-60'
+                            : isSelected
+                            ? 'bg-blue-100 border-blue-400 shadow-md ring-2 ring-blue-300 cursor-pointer'
                             : isHovered
-                            ? 'bg-green-200 border-green-400 shadow-md scale-[1.02]'
-                            : 'bg-green-50 border-green-200 hover:bg-green-100'
+                            ? 'bg-green-200 border-green-400 shadow-md scale-[1.02] cursor-pointer'
+                            : 'bg-green-50 border-green-200 hover:bg-green-100 cursor-pointer'
                         }`}
                         style={{
                           top: '2px',
@@ -270,16 +279,18 @@ export default function AvailabilityCalendar({
                       >
                         <div className="flex items-center gap-0.5">
                           {isSelected && (
-                            <svg className="w-3 h-3 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-3 h-3 text-blue-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           )}
-                          <span className={`text-[10px] sm:text-[11px] font-semibold truncate ${isSelected ? 'text-blue-900' : 'text-green-900'}`}>
+                          <span className={`text-[10px] sm:text-[11px] font-semibold truncate ${slotPast ? 'text-gray-500' : isSelected ? 'text-blue-900' : 'text-green-900'}`}>
                             {formatTimeRange(slot.startTime, slot.endTime)}
                           </span>
                         </div>
                         <div className="hidden sm:flex items-center gap-1 mt-0.5">
-                          {slot.price != null && Number(slot.price) > 0 ? (
+                          {slotPast ? (
+                            <span className="text-[10px] font-medium text-gray-400">Past</span>
+                          ) : slot.price != null && Number(slot.price) > 0 ? (
                             <span className="text-[10px] font-medium text-green-800">
                               LKR {Number(slot.price).toLocaleString()}
                             </span>
@@ -287,7 +298,7 @@ export default function AvailabilityCalendar({
                             <span className="text-[10px] font-medium text-green-700">Free</span>
                           )}
                         </div>
-                        {spotsLeft > 0 && slot.maxBookings > 1 && (
+                        {slot.currentBookings > 0 && spotsLeft > 0 && slot.maxBookings > 1 && (
                           <div className="text-[9px] sm:text-[10px] text-green-700 mt-0.5">
                             {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left
                           </div>

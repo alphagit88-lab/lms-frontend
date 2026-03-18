@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import {
   getMyParents,
@@ -184,13 +184,15 @@ export default function StudentParentLinksPage() {
               >
                 <div className="flex items-center mb-4">
                   {parent.profilePicture ? (
-                    <img
+                    <Image
                       src={parent.profilePicture}
                       alt={`${parent.firstName} ${parent.lastName}`}
-                      className="w-12 h-12 rounded-full mr-3"
+                      width={48}
+                      height={48}
+                      className="rounded-full mr-3 object-cover"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-lg font-bold text-blue-700 mr-3">
+                    <div className="w-12 h-12 rounded-full bg-linear-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-lg font-bold text-blue-700 mr-3">
                       {parent.firstName[0]}
                       {parent.lastName[0]}
                     </div>

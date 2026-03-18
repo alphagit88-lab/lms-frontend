@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/layout/AppLayout';
 import { authAPI } from '@/lib/api/auth';
+import PricingSettings from '@/components/instructor/PricingSettings';
 import {
   StudentProfile,
   TeacherProfile,
@@ -34,12 +36,12 @@ export default function ProfilePage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploadingPicture, setUploadingPicture] = useState(false);
+  const [, setUploadingPicture] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   // Student profile state
-  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
+  const [, setStudentProfile] = useState<StudentProfile | null>(null);
   const [studentForm, setStudentForm] = useState<UpdateStudentProfileData>({
     grade: '',
     medium: '',
@@ -64,6 +66,7 @@ export default function ProfilePage() {
   });
 
   // Parent profile state
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const [parentForm, setParentForm] = useState<UpdateParentProfileData>({
     relationship: '',
@@ -83,6 +86,7 @@ export default function ProfilePage() {
     if (user) {
       loadProfile();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadProfile = async () => {
@@ -294,7 +298,7 @@ export default function ProfilePage() {
         <div className="xl:col-span-4 space-y-8">
 
           {/* Profile Picture Card */}
-          <div className="bg-white rounded-[32px] p-8 border border-slate-200 shadow-sm relative overflow-hidden group">
+          <div className="bg-white rounded-4xl p-8 border border-slate-200 shadow-sm relative overflow-hidden group">
             <div className="relative flex flex-col items-center text-center">
               <div className="relative mb-6">
                 <input
@@ -306,7 +310,12 @@ export default function ProfilePage() {
                 />
                 <div className="w-32 h-32 rounded-3xl overflow-hidden border-4 border-slate-50 shadow-lg relative group/img cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                   {profilePicUrl ? (
-                    <img src={profilePicUrl} className="w-full h-full object-cover" />
+                    <Image
+                      src={profilePicUrl}
+                      fill
+                      className="object-cover"
+                      alt="Profile picture"
+                    />
                   ) : (
                     <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400 text-3xl font-semibold">
                       {user?.firstName?.[0]}
@@ -343,7 +352,7 @@ export default function ProfilePage() {
 
           {/* Metrics Card (For Instructors) */}
           {user?.role === 'instructor' && teacherProfile && (
-            <div className="bg-slate-900 rounded-[32px] p-8 text-white">
+            <div className="bg-slate-900 rounded-4xl p-8 text-white">
               <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-6">Teaching Overview</h3>
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -363,7 +372,7 @@ export default function ProfilePage() {
           )}
 
           {/* Account Integrity */}
-          <div className="bg-white rounded-[32px] p-8 border border-slate-200">
+          <div className="bg-white rounded-4xl p-8 border border-slate-200">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-6">Verification</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50">
@@ -393,7 +402,7 @@ export default function ProfilePage() {
         {/* RIGHT COLUMN: PROFESSIONAL DETAILS FORM */}
         <div className="xl:col-span-8">
 
-          <div className="bg-white rounded-[32px] p-8 sm:p-12 border border-slate-200">
+          <div className="bg-white rounded-4xl p-8 sm:p-12 border border-slate-200">
 
             {/* STUDENT FORM */}
             {user?.role === 'student' && (
@@ -525,6 +534,17 @@ export default function ProfilePage() {
                   </button>
                 </div>
               </form>
+            )}
+
+            {/* MONETIZATION SETTINGS — instructor only */}
+            {user?.role === 'instructor' && (
+              <div className="space-y-6">
+                <header className="border-b border-slate-100 pb-6">
+                  <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Monetization Settings</h2>
+                  <p className="text-slate-500 font-medium text-sm mt-1">Set your pricing configuration for live teaching sessions.</p>
+                </header>
+                <PricingSettings />
+              </div>
             )}
 
             {/* PARENT FORM */}

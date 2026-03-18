@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Recording, getAllRecordings, formatDuration, formatRelativeTime } from '@/lib/api/recordings';
 import { Loader2, Video, Clock, Eye, AlertCircle, Play } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AppLayout from '@/components/layout/AppLayout';
 
 function RecordingCard({ recording }: { recording: Recording }) {
     return (
@@ -13,7 +14,7 @@ function RecordingCard({ recording }: { recording: Recording }) {
             className="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden"
         >
             {/* Thumbnail */}
-            <div className="relative w-full h-40 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+            <div className="relative w-full h-40 bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
                 {recording.thumbnailUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -95,9 +96,10 @@ export default function RecordingsPage() {
     });
 
     return (
-        <ProtectedRoute allowedRoles={['student', 'instructor', 'admin']}>
-            <div className="p-8 max-w-7xl mx-auto">
-                {/* Header */}
+        <ProtectedRoute allowedRoles={['student', 'instructor', 'admin', 'parent']}>
+            <AppLayout>
+                <div className="p-8 max-w-7xl mx-auto">
+                    {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">Recordings</h1>
@@ -163,7 +165,8 @@ export default function RecordingsPage() {
                         </div>
                     </>
                 )}
-            </div>
+                </div>
+            </AppLayout>
         </ProtectedRoute>
     );
 }
