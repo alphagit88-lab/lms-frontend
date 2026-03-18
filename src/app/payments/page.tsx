@@ -87,6 +87,38 @@ export default function PaymentsPage() {
         setRefundError(null);
     };
 
+    const [syncingId, setSyncingId] = useState<string | null>(null);
+
+    const syncPayment = async (paymentId: string) => {
+        try {
+            setSyncingId(paymentId);
+            setError(null);
+            
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+            const res = await fetch(`${API_URL}/api/payments/${paymentId}/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ force: false }) // Student shouldn't be able to force, but API will check host anyways
+            });
+            
+            const data = await res.json();
+            if (data.success) {
+                setSuccessMsg(data.message);
+                // Refresh the list
+                const refreshedData = await getPaymentHistory();
+                setPayments(refreshedData.payments || []);
+            } else {
+                setError(data.message);
+            }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (err) {
+            setError("Failed to sync payment status.");
+        } finally {
+            setSyncingId(null);
+        }
+    };
+
     const handleRefundSubmit = async () => {
         if (!refundModal) return;
         if (!refundReason.trim()) { setRefundError("Please provide a reason for the refund."); return; }
@@ -192,17 +224,29 @@ export default function PaymentsPage() {
                                                     {getStatusBadge(payment.paymentStatus)}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                {canRequestRefund(payment) && (
-                                                    <button
-                                                        onClick={() => openRefundModal(payment)}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition"
-                                                    >
-                                                        <RotateCcw className="w-3.5 h-3.5" />
-                                                        Request Refund
-                                                    </button>
-                                                )}
-                                            </td>
+                                             <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                 <div className="flex justify-end gap-2">
+                                                     {payment.paymentStatus === 'pending' && (
+                                                         <button
+                                                             onClick={() => syncPayment(payment.id)}
+                                                             disabled={syncingId === payment.id}
+                                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition disabled:opacity-50"
+                                                         >
+                                                             <RotateCcw className={`w-3.5 h-3.5 ${syncingId === payment.id ? 'animate-spin' : ''}`} />
+                                                             {syncingId === payment.id ? 'Syncing...' : 'Sync Status'}
+                                                         </button>
+                                                     )}
+                                                     {canRequestRefund(payment) && (
+                                                         <button
+                                                             onClick={() => openRefundModal(payment)}
+                                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition"
+                                                         >
+                                                             <RotateCcw className="w-3.5 h-3.5" />
+                                                             Request Refund
+                                                         </button>
+                                                     )}
+                                                 </div>
+                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>

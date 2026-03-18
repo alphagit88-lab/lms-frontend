@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -28,11 +28,7 @@ export default function PackagesPage() {
   const [expandedBookings, setExpandedBookings] = useState<Booking[]>([]);
   const [expandedLoading, setExpandedLoading] = useState(false);
 
-  useEffect(() => {
-    loadPackages();
-  }, [statusFilter]);
-
-  async function loadPackages() {
+  const loadPackages = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -46,7 +42,11 @@ export default function PackagesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [statusFilter]);
+
+  useEffect(() => {
+    loadPackages();
+  }, [loadPackages]);
 
   async function toggleExpand(pkgId: string) {
     if (expandedId === pkgId) {
@@ -251,6 +251,19 @@ export default function PackagesPage() {
                               {pkg.completedSessions} completed
                               {pkg.cancelledSessions > 0 && ` · ${pkg.cancelledSessions} cancelled`}
                             </div>
+                            
+                            {expandedBookings.some(b => b.status === 'pending_payment') && (
+                                <Link
+                                    href={`/payments/checkout?type=booking_package&referenceId=${pkg.id}&amount=${pkg.finalPrice}&recipientId=${pkg.teacherId}`}
+                                    className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 transition flex items-center gap-1.5"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                    </svg>
+                                    Pay for Package (LKR {Number(pkg.finalPrice).toLocaleString()})
+                                </Link>
+                            )}
+
                             {pkg.discountPercentage > 0 && (
                               <div className="text-emerald-700 font-medium">
                                 {pkg.discountPercentage}% package discount applied

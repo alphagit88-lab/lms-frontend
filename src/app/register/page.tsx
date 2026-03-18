@@ -91,9 +91,9 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden">
       {/* Background effects (match homepage vibe) */}
       <div className="absolute inset-0">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-blue-600/20 rounded-full blur-[120px]" />
-        <div className="absolute top-1/3 left-1/4 w-[420px] h-[420px] bg-violet-600/15 rounded-full blur-[100px]" />
-        <div className="absolute top-1/4 right-1/4 w-[360px] h-[360px] bg-indigo-500/10 rounded-full blur-[80px]" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-225 h-225 bg-blue-600/20 rounded-full blur-[120px]" />
+        <div className="absolute top-1/3 left-1/4 w-105 h-105 bg-violet-600/15 rounded-full blur-[100px]" />
+        <div className="absolute top-1/4 right-1/4 w-90 h-90 bg-indigo-500/10 rounded-full blur-[80px]" />
       </div>
 
       {/* Subtle grid overlay */}
@@ -111,7 +111,7 @@ export default function RegisterPage() {
         <div className="hidden lg:flex items-center justify-center px-10 py-16">
           <div className="max-w-xl w-full">
             <Link href="/" className="inline-flex items-center gap-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-shadow">
+              <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-shadow">
                 <span className="text-white font-bold text-sm">L</span>
               </div>
               <span className="text-lg font-bold text-white tracking-tight group-hover:text-white/90 transition-colors">
@@ -127,7 +127,7 @@ export default function RegisterPage() {
             <h1 className="mt-6 text-4xl xl:text-5xl font-extrabold tracking-tight leading-[1.1]">
               Join LMS today.
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-violet-400 to-indigo-400">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 via-violet-400 to-indigo-400">
                 Learn, teach, or monitor
               </span>
             </h1>
@@ -163,7 +163,7 @@ export default function RegisterPage() {
             {/* Mobile logo */}
             <div className="lg:hidden flex justify-center mb-8">
               <Link href="/" className="inline-flex items-center gap-3">
-                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <div className="w-11 h-11 bg-linear-to-br from-blue-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
                   <span className="text-white font-bold text-sm">L</span>
                 </div>
                 <span className="text-lg font-bold tracking-tight">LMS</span>
@@ -319,7 +319,7 @@ export default function RegisterPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3.5 rounded-2xl font-semibold text-sm bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 transition-all shadow-xl shadow-blue-700/25 hover:shadow-blue-600/35 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full py-3.5 rounded-2xl font-semibold text-sm bg-linear-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 transition-all shadow-xl shadow-blue-700/25 hover:shadow-blue-600/35 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">

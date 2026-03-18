@@ -112,7 +112,7 @@ export default function StudentAnalyticsPage() {
       <AppLayout>
         <div className="min-h-screen bg-slate-50">
           {/* Header */}
-          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 px-6 lg:px-10 pt-10 pb-20">
+          <div className="bg-linear-to-br from-slate-900 via-slate-800 to-blue-900 px-6 lg:px-10 pt-10 pb-20">
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2.5 bg-white/10 rounded-xl border border-white/20">
                 <TrendingUp className="w-5 h-5 text-blue-400" />
@@ -130,7 +130,7 @@ export default function StudentAnalyticsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Gauge card */}
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex items-center gap-6">
-                <div className="w-20 h-20 flex-shrink-0">
+                <div className="w-20 h-20 shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadialBarChart
                       cx="50%"
@@ -213,8 +213,8 @@ export default function StudentAnalyticsPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {examData.exams.map((exam: ExamRecord) => (
-                          <tr key={exam.submissionId} className="hover:bg-slate-50 transition-colors">
+                        {examData.exams.map((exam: ExamRecord, i: number) => (
+                          <tr key={exam.submissionId || `exam-${i}`} className="hover:bg-slate-50 transition-colors">
                             <td className="px-6 py-4">
                               <p className="font-semibold text-slate-800">{exam.examTitle}</p>
                               <p className="text-xs text-slate-400 capitalize">{(exam.examType ?? "").replace(/_/g, " ")}</p>
@@ -275,7 +275,7 @@ export default function StudentAnalyticsPage() {
                         {timeline.map((event, i) => (
                           <div key={`${event.referenceId}-${i}`} className="flex items-start gap-4 relative">
                             <div
-                              className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${timelineColor(event.type)}`}
+                              className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 ${timelineColor(event.type)}`}
                             >
                               {timelineIcon(event.type)}
                             </div>

@@ -38,12 +38,12 @@ export default function StudentSessionsPage() {
                 </div>
 
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[32px] border border-slate-100">
+                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-4xl border border-slate-100">
                         <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
                         <p className="text-slate-500 font-medium text-sm">Loading your sessions...</p>
                     </div>
                 ) : error ? (
-                    <div className="bg-red-50 text-red-600 p-8 rounded-[32px] border border-red-100 text-center font-semibold">
+                    <div className="bg-red-50 text-red-600 p-8 rounded-4xl border border-red-100 text-center font-semibold">
                         {error}
                     </div>
                 ) : sessions.length === 0 ? (

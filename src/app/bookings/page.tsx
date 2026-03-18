@@ -88,6 +88,37 @@ export default function StudentBookingsPage() {
     return booking.status === 'pending' || booking.status === 'confirmed';
   };
 
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+
+  const syncPayment = async (bookingId: string) => {
+    try {
+      setSyncingId(bookingId);
+      setError('');
+      
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${API_URL}/api/bookings/${bookingId}/sync-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMessage(data.message);
+        // Refresh the list to show confirmed status
+        const updatedBookings = await getMyBookings();
+        setBookings(updatedBookings);
+      } else {
+        setError(data.message);
+      }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (err) {
+      setError('Failed to sync payment status. Please try again later.');
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
   const tabs: { id: TabId; label: string; count: number }[] = [
     { id: 'upcoming', label: 'Upcoming', count: upcomingBookings.length },
     { id: 'past', label: 'History', count: pastBookings.length },
@@ -289,15 +320,28 @@ export default function StudentBookingsPage() {
                             </svg>
                             Payment required to confirm this booking.
                           </p>
-                          <Link
-                            href={`/payments/checkout?type=booking_session&referenceId=${booking.id}&amount=${booking.amount}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                            </svg>
-                            Pay Now
-                          </Link>
+                          <div className="flex flex-wrap gap-2">
+                            <Link
+                                href={`/payments/checkout?type=booking_session&referenceId=${booking.id}&amount=${booking.amount}&recipientId=${booking.teacherId}`}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                </svg>
+                                Pay Now
+                            </Link>
+
+                            <button
+                                onClick={() => syncPayment(booking.id)}
+                                disabled={syncingId === booking.id}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 bg-white border border-purple-200 rounded-lg hover:bg-purple-50 transition disabled:opacity-50"
+                            >
+                                <svg className={`w-3.5 h-3.5 ${syncingId === booking.id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                {syncingId === booking.id ? 'Syncing...' : 'I\'ve Already Paid'}
+                            </button>
+                          </div>
                         </div>
                       )}
 

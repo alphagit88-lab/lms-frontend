@@ -2,16 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
-import { createCourse, getCategories, Category, CreateCourseData } from '@/lib/api/courses';
+import { createCourse, getCategories, Category, CreateCourseData, uploadCourseMedia, deleteCourseMedia } from '@/lib/api/courses';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 function CreateCourseContent() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [thumbnailSource, setThumbnailSource] = useState<'url' | 'upload'>('url');
+  const [videoSource, setVideoSource] = useState<'url' | 'upload'>('url');
 
   const [formData, setFormData] = useState<CreateCourseData>({
     title: '',
@@ -52,6 +59,50 @@ function CreateCourseContent() {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
       setFormData((prev) => ({ ...prev, slug }));
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'thumbnail' | 'previewVideoUrl') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 100 * 1024 * 1024) {
+       setError(`File size exceeds the 100MB limit.`);
+       return;
+    }
+
+    try {
+      if (field === 'thumbnail') setUploadingThumbnail(true);
+      if (field === 'previewVideoUrl') setUploadingVideo(true);
+      setError('');
+
+      const res = await uploadCourseMedia(file);
+      setFormData((prev) => ({
+        ...prev,
+        [field]: API_URL + res.url,
+      }));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : `Failed to upload ${field}`);
+    } finally {
+      if (field === 'thumbnail') setUploadingThumbnail(false);
+      if (field === 'previewVideoUrl') setUploadingVideo(false);
+      // Reset input value so same file can be selected again if needed
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveMedia = async (field: 'thumbnail' | 'previewVideoUrl') => {
+    const url = formData[field];
+    if (!url) return;
+
+    try {
+      if (url.includes('/uploads/')) {
+        await deleteCourseMedia(url);
+      }
+      setFormData((prev) => ({ ...prev, [field]: '' }));
+    } catch (err: unknown) {
+      console.error('Remove media error:', err);
+      setFormData((prev) => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -196,20 +247,96 @@ function CreateCourseContent() {
                   </div>
                   <div className="p-6 space-y-5">
                     <div>
-                      <label htmlFor="thumbnail" className={labelClasses}>Thumbnail Image URL</label>
-                      <input type="url" id="thumbnail" name="thumbnail" value={formData.thumbnail}
-                        onChange={handleChange} placeholder="https://example.com/image.jpg" className={inputClasses} />
+                      <div className="flex justify-between items-center mb-2">
+                        <label htmlFor="thumbnail" className={labelClasses.replace(' mb-2', '')}>Thumbnail Image</label>
+                        <select 
+                          value={thumbnailSource} 
+                          onChange={(e) => setThumbnailSource(e.target.value as 'url' | 'upload')}
+                          className="text-xs border border-slate-200 rounded-lg px-2 py-1 outline-none text-slate-600 bg-slate-50 cursor-pointer focus:border-blue-500"
+                        >
+                          <option value="url">Enter URL</option>
+                          <option value="upload">Upload File</option>
+                        </select>
+                      </div>
+                      
+                      {thumbnailSource === 'url' ? (
+                        <input type="url" id="thumbnail" name="thumbnail" value={formData.thumbnail}
+                          onChange={handleChange} placeholder="https://example.com/image.jpg" className={inputClasses} />
+                      ) : (
+                        <div className="flex gap-2">
+                          <input type="text" readOnly value={formData.thumbnail || ''} className={`${inputClasses} text-slate-500 font-normal`} placeholder="No file chosen" />
+                          <label className={`flex items-center justify-center px-4 py-2 border border-slate-200 rounded-xl text-sm font-medium bg-slate-50 hover:bg-slate-100 cursor-pointer transition whitespace-nowrap ${uploadingThumbnail ? 'opacity-50 pointer-events-none' : ''}`}>
+                            {uploadingThumbnail ? 'Uploading...' : 'Browse'}
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, 'thumbnail')} disabled={uploadingThumbnail} />
+                          </label>
+                        </div>
+                      )}
                       {formData.thumbnail && (
-                        <div className="mt-3 w-full h-36 rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
-                          <img src={formData.thumbnail} alt="Thumbnail preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        <div className="mt-3 relative group">
+                          <div className="relative w-full h-36 rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+                            <Image
+                              src={formData.thumbnail}
+                              alt="Thumbnail preview"
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <button  
+                            type="button"
+                            onClick={() => handleRemoveMedia('thumbnail')}
+                            className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
+                            title="Remove Image"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
                         </div>
                       )}
                     </div>
                     <div>
-                      <label htmlFor="previewVideoUrl" className={labelClasses}>Preview Video URL</label>
-                      <input type="url" id="previewVideoUrl" name="previewVideoUrl"
-                        value={formData.previewVideoUrl} onChange={handleChange}
-                        placeholder="https://youtube.com/watch?v=..." className={inputClasses} />
+                      <div className="flex justify-between items-center mb-2">
+                        <label htmlFor="previewVideoUrl" className={labelClasses.replace(' mb-2', '')}>Preview Video</label>
+                        <select 
+                          value={videoSource} 
+                          onChange={(e) => setVideoSource(e.target.value as 'url' | 'upload')}
+                          className="text-xs border border-slate-200 rounded-lg px-2 py-1 outline-none text-slate-600 bg-slate-50 cursor-pointer focus:border-blue-500"
+                        >
+                          <option value="url">Enter URL</option>
+                          <option value="upload">Upload File</option>
+                        </select>
+                      </div>
+                      
+                      {videoSource === 'url' ? (
+                        <input type="url" id="previewVideoUrl" name="previewVideoUrl"
+                          value={formData.previewVideoUrl} onChange={handleChange}
+                          placeholder="https://youtube.com/watch?v=..." className={inputClasses} />
+                      ) : (
+                        <div className="flex gap-2">
+                          <input type="text" readOnly value={formData.previewVideoUrl || ''} className={`${inputClasses} text-slate-500 font-normal`} placeholder="No file chosen" />
+                          <label className={`flex items-center justify-center px-4 py-2 border border-slate-200 rounded-xl text-sm font-medium bg-slate-50 hover:bg-slate-100 cursor-pointer transition whitespace-nowrap ${uploadingVideo ? 'opacity-50 pointer-events-none' : ''}`}>
+                            {uploadingVideo ? 'Uploading...' : 'Browse'}
+                            <input type="file" accept="video/mp4,video/webm" className="hidden" onChange={(e) => handleFileUpload(e, 'previewVideoUrl')} disabled={uploadingVideo} />
+                          </label>
+                        </div>
+                      )}
+                      {formData.previewVideoUrl && (
+                        <div className="mt-3 relative group">
+                          <div className="w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video">
+                            <video src={formData.previewVideoUrl} controls className="w-full h-full object-contain" onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }} />
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => handleRemoveMedia('previewVideoUrl')}
+                            className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 z-10"
+                            title="Remove Video"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
                       <p className="mt-1.5 text-xs text-slate-400">Shown to potential students before enrolling</p>
                     </div>
                   </div>

@@ -7,7 +7,9 @@ import {
   ManualPayment,
   getPendingManualPayments,
   reviewManualPayment,
-  getTransactions,
+  getPaymentsList,
+  confirmPayHerePayment,
+  cancelPayHerePayment,
 } from "@/lib/api/payments";
 
 const API_BASE =
@@ -29,17 +31,6 @@ function statusBadge(status: string) {
   return map[status] ?? "bg-slate-100 text-slate-600";
 }
 
-function txTypeBadge(type: string) {
-  const map: Record<string, string> = {
-    payment: "bg-blue-100 text-blue-700",
-    payhere: "bg-blue-100 text-blue-700",
-    manual: "bg-amber-100 text-amber-700",
-    refund: "bg-purple-100 text-purple-700",
-    payout: "bg-emerald-100 text-emerald-700",
-    platform_fee: "bg-orange-100 text-orange-700",
-  };
-  return map[type] ?? "bg-slate-100 text-slate-600";
-}
 
 // ─── Bank Transfer Tab ────────────────────────────────────────────────────────
 
@@ -143,7 +134,7 @@ function BankTransferTab() {
                     <td className="px-5 py-4 font-bold text-slate-900">
                       {p.currency} {Number(p.amount).toFixed(2)}
                     </td>
-                    <td className="px-5 py-4 font-mono text-xs text-slate-500 max-w-[140px] truncate">
+                    <td className="px-5 py-4 font-mono text-xs text-slate-500 max-w-35 truncate">
                       {p.referenceId || p.id}
                     </td>
                     <td className="px-5 py-4 text-slate-400 text-xs">
@@ -205,50 +196,69 @@ function BankTransferTab() {
 
 // ─── PayHere Payments Tab ─────────────────────────────────────────────────────
 
-interface Transaction {
+interface PaymentRecord {
   id: string;
-  paymentId: string;
-  userId: string;
-  transactionType: string;
+  studentId: string;
+  courseId: string | null;
   amount: number;
   currency: string;
-  description?: string;
+  paymentMethod: string;
+  paymentType: string;
+  paymentStatus: string;
   createdAt: string;
-  payment?: {
-    paymentMethod?: string;
-    paymentStatus?: string;
-    paymentType?: string;
-    referenceId?: string;
-    gatewayOrderId?: string;
-  };
+  student: { firstName: string; lastName: string; email: string };
+  course?: { title: string } | null;
 }
 
 function PayHereTab() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await getTransactions();
-        // Filter to show only payhere-related transactions
-        const all: Transaction[] = data.transactions ?? data ?? [];
-        const payhere = all.filter(
-          (t) =>
-            !t.payment?.paymentMethod ||
-            t.payment.paymentMethod === "payhere" ||
-            t.payment.paymentMethod === "credit_card" ||
-            t.payment.paymentMethod === "debit_card"
-        );
-        setTransactions(payhere);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load PayHere transactions.");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await getPaymentsList({ method: 'payhere' });
+      setPayments(data.payments || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load PayHere payments.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleConfirm = async (paymentId: string) => {
+    setActionLoading(paymentId);
+    try {
+      await confirmPayHerePayment(paymentId);
+      setSuccess("Payment confirmed successfully!");
+      load();
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Confirmation failed.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCancel = async (paymentId: string) => {
+    if (!confirm("Are you sure you want to cancel this payment?")) return;
+    setActionLoading(paymentId);
+    try {
+      await cancelPayHerePayment(paymentId);
+      setSuccess("Payment cancelled successfully.");
+      load();
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Cancellation failed.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -261,21 +271,27 @@ function PayHereTab() {
   return (
     <div>
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between">
           <p className="text-red-700 text-sm">{error}</p>
+          <button onClick={() => setError("")} className="text-red-400 hover:text-red-600 text-lg leading-none">&times;</button>
+        </div>
+      )}
+      {success && (
+        <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+          <p className="text-emerald-700 text-sm">{success}</p>
         </div>
       )}
 
-      {transactions.length === 0 ? (
+      {payments.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center">
           <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-slate-900 mb-2">No PayHere Transactions</h3>
+          <h3 className="text-lg font-bold text-slate-900 mb-2">No PayHere Records</h3>
           <p className="text-slate-500 text-sm max-w-sm mx-auto">
-            PayHere payment transactions for your courses will appear here.
+            PayHere online payment records for your courses will appear here.
           </p>
         </div>
       ) : (
@@ -285,53 +301,59 @@ function PayHereTab() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500">
                   <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Date</th>
-                  <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Type</th>
+                  <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Student</th>
                   <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Amount</th>
-                  <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Method</th>
+                  <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Type</th>
                   <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Status</th>
                   <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Description</th>
-                  <th className="text-left px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Order ID</th>
+                  <th className="text-right px-5 py-4 font-bold uppercase tracking-wider text-[10px]">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((t) => (
-                  <tr key={t.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                {payments.map((p) => (
+                  <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
                     <td className="px-5 py-4 text-slate-500 text-xs whitespace-nowrap">
-                      {new Date(t.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                      {new Date(p.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
                     </td>
-                    <td className="px-5 py-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${txTypeBadge(t.transactionType)}`}>
-                        {t.transactionType.replace("_", " ")}
-                      </span>
+                    <td className="px-5 py-4 whitespace-nowrap">
+                      <p className="font-bold text-slate-900">{p.student.firstName} {p.student.lastName}</p>
+                      <p className="text-[10px] text-slate-400">{p.student.email}</p>
                     </td>
                     <td className="px-5 py-4 font-bold text-slate-900 whitespace-nowrap">
-                      <span className={t.amount < 0 ? "text-red-600" : "text-emerald-700"}>
-                        {t.amount < 0 ? "-" : "+"}{t.currency} {Math.abs(t.amount).toFixed(2)}
+                      {p.currency} {Number(p.amount).toFixed(2)}
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700">
+                        {p.paymentType.replace("_", " ")}
                       </span>
                     </td>
                     <td className="px-5 py-4">
-                      {t.payment?.paymentMethod ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-50 text-indigo-600">
-                          {t.payment.paymentMethod.replace("_", " ")}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-slate-400">—</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusBadge(p.paymentStatus)}`}>
+                        {p.paymentStatus.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-slate-500 text-xs max-w-50 truncate">
+                      {p.course?.title || p.paymentType.replace("_", " ")}
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      {p.paymentStatus === "pending" && (
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleConfirm(p.id)}
+                            disabled={actionLoading === p.id}
+                            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-700 transition shadow-sm disabled:opacity-50"
+                          >
+                            CONFIRM
+                          </button>
+                          <button
+                            onClick={() => handleCancel(p.id)}
+                            disabled={actionLoading === p.id}
+                            className="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-[10px] font-bold hover:bg-red-50 transition shadow-sm disabled:opacity-50"
+                          >
+                            CANCEL
+                          </button>
+                        </div>
                       )}
-                    </td>
-                    <td className="px-5 py-4">
-                      {t.payment?.paymentStatus ? (
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusBadge(t.payment.paymentStatus)}`}>
-                          {t.payment.paymentStatus.replace("_", " ")}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4 text-slate-500 text-xs max-w-[200px] truncate">
-                      {t.description || t.payment?.paymentType?.replace("_", " ") || "—"}
-                    </td>
-                    <td className="px-5 py-4 font-mono text-[10px] text-slate-400 max-w-[120px] truncate">
-                      {t.payment?.gatewayOrderId || t.paymentId}
                     </td>
                   </tr>
                 ))}

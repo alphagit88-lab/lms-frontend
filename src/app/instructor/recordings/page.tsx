@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
@@ -343,7 +343,6 @@ function RecordingModal({
   const [formData, setFormData] = useState<CreateRecordingData>({
     sessionId: recording?.sessionId || '',
     fileUrl: recording?.fileUrl || '',
-    fileSize: recording?.fileSize,
     durationMinutes: recording?.durationMinutes,
     videoQuality: recording?.videoQuality || '',
     thumbnailUrl: recording?.thumbnailUrl || '',
@@ -359,11 +358,27 @@ function RecordingModal({
   useEffect(() => {
     if (recording) return; // not needed when editing
     setSessionsLoading(true);
-    sessionApi.getUpcomingSessions()
+    // Fetch both upcoming and past sessions so recordings can be linked
+    sessionApi.getSessions()
       .then((data) => setSessions(data))
       .catch(() => setSessions([]))
       .finally(() => setSessionsLoading(false));
   }, [recording]);
+
+  // YouTube Thumbnail Auto-Detection
+  useEffect(() => {
+    if (formData.fileUrl && !formData.thumbnailUrl) {
+      const ytMatch = formData.fileUrl.match(/(?:youtube\.be\/|youtube\.com\/(?:watch\?v=|v\/|embed\/|user\/[^\/]+\/u\/1\/|oembed\?url=))([^#\&\?]*)/);
+      if (ytMatch && ytMatch[1]) {
+        const videoId = ytMatch[1];
+        setFormData(prev => ({
+          ...prev,
+          thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+          videoQuality: prev.videoQuality || '720p' // Default to 720p for YT links
+        }));
+      }
+    }
+  }, [formData.fileUrl, formData.thumbnailUrl]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -521,25 +536,7 @@ function RecordingModal({
               />
             </div>
 
-            {/* File Size */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                File Size (bytes)
-              </label>
-              <input
-                type="number"
-                value={formData.fileSize || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, fileSize: Number(e.target.value) || undefined })
-                }
-                placeholder="524288000"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Optional: Size in bytes (e.g., 524288000 = 500 MB)
-              </p>
-            </div>
+
 
             {/* Is Public */}
             <div className="flex items-center">

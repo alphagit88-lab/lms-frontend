@@ -4,7 +4,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import AppLayout from '@/components/layout/AppLayout';
 import { getCourseById, Course } from '@/lib/api/courses';
 import { useAuth } from '@/contexts/AuthContext';
@@ -289,8 +288,10 @@ export default function CourseDetailPage() {
         {/* Right: Enrollment Card */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sticky top-24">
-            {course.thumbnail ? (
-              <Image src={course.thumbnail} alt={course.title} width={400} height={225} className="w-full aspect-video object-cover rounded-lg mb-5" />
+            {course.previewVideoUrl ? (
+              <video src={course.previewVideoUrl} controls poster={course.thumbnail} className="w-full aspect-video object-cover rounded-lg mb-5 bg-black" />
+            ) : course.thumbnail ? (
+              <img src={course.thumbnail} alt={course.title} className="w-full aspect-video object-cover rounded-lg mb-5" />
             ) : (
               <div className="w-full aspect-video bg-linear-to-br from-slate-100 to-slate-200 rounded-lg mb-5 flex items-center justify-center">
                 <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

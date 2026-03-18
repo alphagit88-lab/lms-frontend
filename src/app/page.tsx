@@ -7,7 +7,7 @@ export default function Home() {
       <nav className="fixed top-0 inset-x-0 z-50 border-b border-white/5 bg-[#0a0f1e]/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-violet-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <div className="w-8 h-8 bg-linear-to-br from-blue-500 to-violet-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
               <span className="text-white font-bold text-sm">L</span>
             </div>
             <span className="text-lg font-bold text-white tracking-tight">LMS</span>
@@ -33,9 +33,9 @@ export default function Home() {
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
         {/* Background effects */}
         <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-blue-600/20 rounded-full blur-[120px]" />
-          <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] bg-violet-600/15 rounded-full blur-[100px]" />
-          <div className="absolute top-1/4 right-1/4 w-[350px] h-[350px] bg-indigo-500/10 rounded-full blur-[80px]" />
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-225 h-150 bg-blue-600/20 rounded-full blur-[120px]" />
+          <div className="absolute top-1/3 left-1/4 w-100 h-100 bg-violet-600/15 rounded-full blur-[100px]" />
+          <div className="absolute top-1/4 right-1/4 w-87.5 h-87.5 bg-indigo-500/10 rounded-full blur-[80px]" />
         </div>
 
         {/* Grid overlay */}
@@ -59,7 +59,7 @@ export default function Home() {
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-[1.08]">
             Modern Learning,
             <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-violet-400 to-indigo-400">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 via-violet-400 to-indigo-400">
               Made Simple
             </span>
           </h1>
@@ -74,7 +74,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               href="/register"
-              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-xl font-semibold text-base transition-all shadow-xl shadow-blue-700/30 hover:shadow-blue-600/40 hover:-translate-y-0.5"
+              className="w-full sm:w-auto px-8 py-4 bg-linear-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-xl font-semibold text-base transition-all shadow-xl shadow-blue-700/30 hover:shadow-blue-600/40 hover:-translate-y-0.5"
             >
               Start Learning Free
             </Link>
@@ -116,7 +116,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Feature 1 */}
-            <div className="group relative bg-gradient-to-b from-blue-500/10 to-transparent border border-blue-500/20 hover:border-blue-500/40 rounded-2xl p-8 transition-all hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
+            <div className="group relative bg-linear-to-b from-blue-500/10 to-transparent border border-blue-500/20 hover:border-blue-500/40 rounded-2xl p-8 transition-all hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
               <div className="w-12 h-12 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center mb-6 group-hover:bg-blue-500/25 transition-colors">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -129,7 +129,7 @@ export default function Home() {
             </div>
 
             {/* Feature 2 */}
-            <div className="group relative bg-gradient-to-b from-violet-500/10 to-transparent border border-violet-500/20 hover:border-violet-500/40 rounded-2xl p-8 transition-all hover:shadow-xl hover:shadow-violet-500/10 hover:-translate-y-1">
+            <div className="group relative bg-linear-to-b from-violet-500/10 to-transparent border border-violet-500/20 hover:border-violet-500/40 rounded-2xl p-8 transition-all hover:shadow-xl hover:shadow-violet-500/10 hover:-translate-y-1">
               <div className="w-12 h-12 rounded-xl bg-violet-500/15 text-violet-400 flex items-center justify-center mb-6 group-hover:bg-violet-500/25 transition-colors">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -142,7 +142,7 @@ export default function Home() {
             </div>
 
             {/* Feature 3 */}
-            <div className="group relative bg-gradient-to-b from-emerald-500/10 to-transparent border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl p-8 transition-all hover:shadow-xl hover:shadow-emerald-500/10 hover:-translate-y-1">
+            <div className="group relative bg-linear-to-b from-emerald-500/10 to-transparent border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl p-8 transition-all hover:shadow-xl hover:shadow-emerald-500/10 hover:-translate-y-1">
               <div className="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-6 group-hover:bg-emerald-500/25 transition-colors">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -160,8 +160,8 @@ export default function Home() {
       {/* CTA Banner */}
       <section className="py-20 bg-[#0a0f1e]">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-blue-600/20 via-violet-600/20 to-indigo-600/20 border border-white/10 p-12 text-center">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-violet-600/10" />
+          <div className="relative rounded-3xl overflow-hidden bg-linear-to-r from-blue-600/20 via-violet-600/20 to-indigo-600/20 border border-white/10 p-12 text-center">
+            <div className="absolute inset-0 bg-linear-to-br from-blue-600/10 to-violet-600/10" />
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Ready to start your journey?</h2>
               <p className="text-slate-400 mb-8 max-w-lg mx-auto">
@@ -169,7 +169,7 @@ export default function Home() {
               </p>
               <Link
                 href="/register"
-                className="inline-block px-8 py-4 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-xl font-semibold text-base transition-all shadow-xl shadow-blue-700/30 hover:-translate-y-0.5"
+                className="inline-block px-8 py-4 bg-linear-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-xl font-semibold text-base transition-all shadow-xl shadow-blue-700/30 hover:-translate-y-0.5"
               >
                 Get Started — It&apos;s Free
               </Link>

@@ -1,18 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { gradingApi, GradingSubmission, GradingExamInfo, GradingAnswer } from '@/lib/api/grading';
+import { useParams } from 'next/navigation';
+import { gradingApi, GradingSubmission, GradingExamInfo } from '@/lib/api/grading';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
 import {
-    CheckCircle2, Clock, User, FileText, Send, Download,
-    ChevronDown, ChevronUp, Loader2, AlertTriangle, Eye, Scan, MessageSquare
+    CheckCircle2, User, FileText, Send, Download,
+    ChevronDown, ChevronUp, Loader2, Eye, Scan
 } from 'lucide-react';
 
 export default function GradeExamPage() {
     const params = useParams();
-    const router = useRouter();
     const examId = params.examId as string;
 
     const [loading, setLoading] = useState(true);
@@ -65,7 +64,7 @@ export default function GradeExamPage() {
         try {
             setSavingId(answerId);
             await gradingApi.gradeAnswer(answerId, grade.marks, grade.feedback);
-        } catch (err) {
+        } catch {
             alert('Failed to save grade.');
         } finally {
             setSavingId(null);
@@ -77,7 +76,7 @@ export default function GradeExamPage() {
             setFinalizingId(submissionId);
             await gradingApi.finalizeGrading(submissionId, overallFeedback);
             await fetchData(); // Reload
-        } catch (err) {
+        } catch {
             alert('Failed to finalize grading.');
         } finally {
             setFinalizingId(null);
@@ -91,14 +90,14 @@ export default function GradeExamPage() {
             await gradingApi.publishScores(examId);
             alert('Scores published successfully!');
             await fetchData();
-        } catch (err) {
+        } catch {
             alert('Failed to publish scores.');
         } finally {
             setPublishing(false);
         }
     };
 
-    const handleTriggerOCR = async (answerId: string, currentOcrText?: string) => {
+    const handleTriggerOCR = async (answerId: string) => {
         // If OCR text already exists, allow re-running by clearing it first
         try {
             setOcrLoadingId(answerId);
@@ -111,6 +110,7 @@ export default function GradeExamPage() {
             } else {
                 setOcrResults(prev => ({ ...prev, [answerId]: '(No text detected — try a clearer image)' }));
             }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             const msg = err?.response?.data?.error || err?.message || 'OCR processing failed.';
             setOcrResults(prev => ({ ...prev, [answerId]: `Error: ${msg}` }));
@@ -119,7 +119,6 @@ export default function GradeExamPage() {
         }
     };
 
-    const getQuestionById = (qId: string) => exam?.questions.find(q => q.id === qId);
     const totalSubmissions = submissions.length;
     const gradedCount = submissions.filter(s => s.status === 'graded').length;
 
@@ -187,7 +186,7 @@ export default function GradeExamPage() {
                                 <FileText className="w-8 h-8 text-gray-400" />
                             </div>
                             <h3 className="text-lg font-bold text-gray-700">No submissions yet</h3>
-                            <p className="text-gray-400 mt-1">Students haven't submitted answers for this exam.</p>
+                            <p className="text-gray-400 mt-1">Students haven&apos;t submitted answers for this exam.</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -259,7 +258,7 @@ export default function GradeExamPage() {
 
                                                                 {/* Student's Answer */}
                                                                 <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                                                    <div className="text-xs font-bold text-gray-500 uppercase mb-2">Student's Answer</div>
+                                                                    <div className="text-xs font-bold text-gray-500 uppercase mb-2">Student&apos;s Answer</div>
                                                                     {(() => {
                                                                         const isMCQ = q.questionType === 'multiple_choice' || q.questionType === 'true_false';
 
@@ -297,7 +296,7 @@ export default function GradeExamPage() {
                                                                                 <Eye className="w-4 h-4" /> View Uploaded Image
                                                                             </a>
                                                                             <button
-                                                                                onClick={() => handleTriggerOCR(answer.id, answer.ocrText)}
+                                                                                onClick={() => handleTriggerOCR(answer.id)}
                                                                                 disabled={ocrLoadingId === answer.id}
                                                                                 className="inline-flex items-center gap-1.5 text-sm text-purple-600 hover:text-purple-700 font-medium disabled:opacity-50"
                                                                             >
@@ -348,7 +347,7 @@ export default function GradeExamPage() {
 
                                                                 {/* Grading inputs */}
                                                                 <div className="mt-4 flex flex-col md:flex-row gap-4 items-end">
-                                                                    <div className="flex-shrink-0 w-32">
+                                                                    <div className="shrink-0 w-32">
                                                                         <label className="block text-xs font-bold text-gray-500 mb-1">Marks</label>
                                                                         <input
                                                                             type="number"

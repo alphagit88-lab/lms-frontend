@@ -112,7 +112,7 @@ export default function TeacherProfilePage() {
     // Paid slot → go straight to checkout; student must pay before teacher sees it
     if (booking.status === 'pending_payment' && booking.amount && Number(booking.amount) > 0) {
       router.push(
-        `/payments/checkout?type=booking_session&referenceId=${booking.id}&amount=${booking.amount}`
+        `/payments/checkout?type=booking_session&referenceId=${booking.id}&amount=${booking.amount}&recipientId=${booking.teacherId}`
       );
       return;
     }
@@ -144,7 +144,14 @@ export default function TeacherProfilePage() {
     setShowPackageModal(false);
     setSelectedSlots([]);
     setCalendarKey((prev) => prev + 1);
-  }, []);
+
+    // Paid package → go straight to checkout; student must pay before teacher sees it
+    if (response.package.finalPrice && Number(response.package.finalPrice) > 0) {
+      router.push(
+        `/payments/checkout?type=booking_package&referenceId=${response.package.id}&amount=${response.package.finalPrice}&recipientId=${response.package.teacherId}`
+      );
+    }
+  }, [router]);
 
   const handleClosePackageSuccess = useCallback(() => {
     setPackageSuccess(null);

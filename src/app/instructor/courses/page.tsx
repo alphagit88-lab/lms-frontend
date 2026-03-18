@@ -1,16 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import { getMyCourses, deleteCourse, togglePublishCourse, Course } from '@/lib/api/courses';
-import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
 
 function InstructorCoursesContent() {
-  const router = useRouter();
-  const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -122,9 +119,15 @@ function InstructorCoursesContent() {
             >
               <div className="flex items-start gap-5">
                 {/* Thumbnail */}
-                <div className="flex-shrink-0 hidden sm:block">
+                <div className="shrink-0 hidden sm:block">
                   {course.thumbnail ? (
-                    <img src={course.thumbnail} alt={course.title} className="w-36 h-24 object-cover rounded-lg" />
+                    <Image
+                      src={course.thumbnail}
+                      alt={course.title}
+                      width={144}
+                      height={96}
+                      className="object-cover rounded-lg"
+                    />
                   ) : (
                     <div className="w-36 h-24 bg-slate-100 rounded-lg flex items-center justify-center">
                       <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

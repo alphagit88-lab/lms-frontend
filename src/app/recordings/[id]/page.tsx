@@ -6,6 +6,7 @@ import { Recording, getRecordingById } from '@/lib/api/recordings';
 import { RecordingViewer } from '@/components/recording/RecordingViewer';
 import { ChevronLeft, Loader2, AlertCircle } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AppLayout from '@/components/layout/AppLayout';
 
 export default function RecordingDetailPage() {
     const params = useParams();
@@ -34,9 +35,10 @@ export default function RecordingDetailPage() {
     }, [id]);
 
     return (
-        <ProtectedRoute allowedRoles={['student', 'instructor', 'admin']}>
-            <div className="p-8 max-w-5xl mx-auto">
-                <button
+        <ProtectedRoute allowedRoles={['student', 'instructor', 'admin', 'parent']}>
+            <AppLayout>
+                <div className="p-8 max-w-5xl mx-auto">
+                    <button
                     onClick={() => router.back()}
                     className="flex items-center text-gray-500 hover:text-gray-900 mb-8 group transition-colors"
                 >
@@ -64,7 +66,8 @@ export default function RecordingDetailPage() {
                 ) : recording ? (
                     <RecordingViewer recording={recording} />
                 ) : null}
-            </div>
+                </div>
+            </AppLayout>
         </ProtectedRoute>
     );
 }

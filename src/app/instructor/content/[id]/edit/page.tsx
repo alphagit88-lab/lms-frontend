@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import {
   getContentById,
   updateContent,
-  ContentType,
-  getContentTypeLabel,
   Content,
   UpdateContentData
 } from '@/lib/api/content';
@@ -16,6 +14,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 export default function EditContentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [content, setContent] = useState<Content | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,10 +24,9 @@ export default function EditContentPage({ params }: { params: Promise<{ id: stri
   const [formData, setFormData] = useState<UpdateContentData>({
     title: '',
     description: '',
-    contentType: undefined,
     language: '',
     isPaid: false,
-    price: '',
+    price: '' as unknown as number,
     subject: '',
     grade: '',
     isDownloadable: true,
@@ -47,7 +45,7 @@ export default function EditContentPage({ params }: { params: Promise<{ id: stri
           description: data.description || '',
           language: data.language,
           isPaid: data.isPaid,
-          price: data.price ? String(data.price) : '',
+          price: data.price ? String(data.price) as unknown as number : '' as unknown as number,
           subject: data.subject || '',
           grade: data.grade || '',
           isDownloadable: data.isDownloadable,
@@ -212,7 +210,7 @@ export default function EditContentPage({ params }: { params: Promise<{ id: stri
                   <input
                     type="number"
                     value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value as unknown as number })}
                     min="0"
                     step="0.01"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
