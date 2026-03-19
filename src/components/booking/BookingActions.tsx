@@ -93,10 +93,13 @@ export default function BookingActions({
               type="url"
               value={meetingLink}
               onChange={(e) => setMeetingLink(e.target.value)}
-              placeholder="https://zoom.us/j/..."
+              placeholder="Leave empty to auto-create Zoom"
               className="w-full px-2.5 py-1.5 text-sm border border-green-300 rounded-md focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none bg-white"
               disabled={loading}
             />
+            <p className="text-[10px] text-green-600">
+              System will automatically generate a Zoom meeting if left blank.
+            </p>
             <div className="flex gap-2">
               <button
                 onClick={() => {

@@ -37,6 +37,7 @@ export interface Course {
   level: 'beginner' | 'intermediate' | 'advanced';
   durationHours?: number;
   price: number;
+  discountPercentage?: number;
   isPublished: boolean;
   publishedAt?: string;
   enrollmentCount: number;
@@ -103,6 +104,7 @@ export interface CreateCourseData {
   categoryId?: string;
   level: 'beginner' | 'intermediate' | 'advanced';
   price: number;
+  discountPercentage?: number;
   thumbnail?: string;
   previewVideoUrl?: string;
   medium?: 'english' | 'sinhala' | 'tamil' | string;
@@ -116,6 +118,7 @@ export interface UpdateCourseData {
   categoryId?: string;
   level?: 'beginner' | 'intermediate' | 'advanced';
   price?: number;
+  discountPercentage?: number | null;
   thumbnail?: string;
   previewVideoUrl?: string;
   status?: 'draft' | 'published' | 'archived';

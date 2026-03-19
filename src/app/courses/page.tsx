@@ -145,10 +145,13 @@ export default function CoursesPage() {
       }
     } else {
       // Route through payment checkout
+      const basePrice = course.price || 0;
+      const discountPercent = course.discountPercentage || 0;
+      const effectivePrice = Math.round(basePrice * (1 - discountPercent / 100) * 100) / 100;
       const checkoutUrl = new URL(window.location.origin + '/checkout');
       checkoutUrl.searchParams.append('type', 'course_enrollment');
       checkoutUrl.searchParams.append('referenceId', course.id);
-      checkoutUrl.searchParams.append('price', course.price?.toString() || '0');
+      checkoutUrl.searchParams.append('price', effectivePrice.toString());
       checkoutUrl.searchParams.append('title', course.title || '');
       if (course.instructorId) checkoutUrl.searchParams.append('recipientId', course.instructorId);
       router.push(checkoutUrl.pathname + checkoutUrl.search);
@@ -159,7 +162,7 @@ export default function CoursesPage() {
 
   const formatPrice = (price: number | string | undefined) => {
     const numPrice = Number(price || 0);
-    return numPrice === 0 ? 'Free' : `$${numPrice.toFixed(2)}`;
+    return numPrice === 0 ? 'Free' : `LKR ${numPrice.toLocaleString()}`;
   };
 
   const getLevelBadgeColor = (level: string) => {
@@ -445,7 +448,23 @@ export default function CoursesPage() {
                     )}
 
                     <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                      <div className="text-lg font-bold text-slate-900">{formatPrice(course.price)}</div>
+                      <div className="flex flex-col">
+                        {course.discountPercentage != null && Number(course.discountPercentage) > 0 ? (
+                          <>
+                            <div className="text-xs text-slate-400 line-through decoration-red-400/50">
+                              {formatPrice(course.price)}
+                            </div>
+                            <div className="text-lg font-bold text-emerald-600 flex items-center gap-1.5">
+                              {formatPrice(Math.round(Number(course.price) * (1 - Number(course.discountPercentage) / 100) * 100) / 100)}
+                              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                {course.discountPercentage}% OFF
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-lg font-bold text-slate-900">{formatPrice(course.price)}</div>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <span className="flex items-center text-sm text-slate-400">
                           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
