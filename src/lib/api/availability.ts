@@ -14,7 +14,7 @@ export interface AvailabilitySlot {
   maxBookings: number;
   currentBookings: number;
   price?: number;
-  discountPercentage?: number;
+  discountPercentage?: number | null;
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -49,7 +49,7 @@ export interface CreateSlotData {
   dayOfWeek?: string;
   recurrenceEndDate?: string;
   price?: number;
-  discountPercentage?: number;
+  discountPercentage?: number | null;
   maxBookings?: number;
   notes?: string;
   targetTeacherId?: string;
@@ -74,7 +74,7 @@ export interface CreateRecurringData {
   startDate?: string;       // YYYY-MM-DD — optional, defaults to today; can be past
   recurrenceEndDate: string; // YYYY-MM-DD
   price?: number;
-  discountPercentage?: number;
+  discountPercentage?: number | null;
   maxBookings?: number;
   notes?: string;
   targetTeacherId?: string;
