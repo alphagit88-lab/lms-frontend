@@ -31,7 +31,6 @@ export const JoinButton: React.FC<JoinButtonProps> = ({ session, onStatusChange 
 
     // Can join 15 mins before start
     const canJoin = timeLeft <= 15 * 60 * 1000 && !isCompleted && !isCancelled;
-    const isRightNow = timeLeft <= 0 && !isCompleted && !isCancelled;
 
     const handleStart = async () => {
         if (!isTeacher || isStarted || isCompleted) return;
@@ -39,7 +38,12 @@ export const JoinButton: React.FC<JoinButtonProps> = ({ session, onStatusChange 
         try {
             const updated = await sessionApi.startSession(session.id);
             if (onStatusChange) onStatusChange(updated);
-            window.open(session.meetingLink, '_blank');
+            // Open Zoom link if it exists, otherwise alert
+            if (updated.meetingLink) {
+                window.open(updated.meetingLink, '_blank');
+            } else {
+                alert('Session started, but no Zoom meeting link is attached to this session.');
+            }
         } catch (error) {
             console.error('Failed to start session:', error);
             alert('Failed to start session. Please try again.');
@@ -49,7 +53,11 @@ export const JoinButton: React.FC<JoinButtonProps> = ({ session, onStatusChange 
     };
 
     const handleJoin = () => {
-        window.open(session.meetingLink, '_blank');
+        if (session.meetingLink) {
+            window.open(session.meetingLink, '_blank');
+        } else {
+            alert('No meeting link is available for this session.');
+        }
     };
 
     if (isCompleted) {
@@ -85,8 +93,8 @@ export const JoinButton: React.FC<JoinButtonProps> = ({ session, onStatusChange 
                 onClick={handleStart}
                 disabled={!canJoin || loading}
                 className={`px-4 py-2 rounded-md font-medium transition-colors ${canJoin
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     }`}
             >
                 {loading ? 'Starting...' : canJoin ? 'Start Session' : `Starts in ${Math.ceil(timeLeft / (60 * 60 * 1000))}h`}
@@ -100,8 +108,8 @@ export const JoinButton: React.FC<JoinButtonProps> = ({ session, onStatusChange 
             onClick={handleJoin}
             disabled={!canJoin}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${canJoin
-                    ? 'bg-green-600 hover:bg-green-700 text-white'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                ? 'bg-green-600 hover:bg-green-700 text-white'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 }`}
         >
             {isStarted ? 'Join Now' : canJoin ? 'Join Session' : 'Scheduled'}

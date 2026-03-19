@@ -13,10 +13,24 @@ export enum ContentType {
   OTHER = 'other',
 }
 
+export enum AcademicResourceType {
+  PAST_PAPER = 'past_paper',
+  MODEL_PAPER = 'model_paper',
+  TEACHER_PAPER = 'teacher_paper',
+  MARKING_SCHEME = 'marking_scheme',
+  MARK_SHEET = 'mark_sheet',
+  TUTORIAL = 'tutorial',
+  LESSON_NOTES = 'lesson_notes',
+  REFERENCE_MATERIAL = 'reference_material',
+  PAPER_DISCUSSION = 'paper_discussion',
+  OTHER = 'other',
+}
+
 export interface Content {
   id: string;
   teacherId: string;
   contentType: ContentType;
+  resourceType: AcademicResourceType;
   title: string;
   description?: string;
   language: string;
@@ -24,13 +38,14 @@ export interface Content {
   fileSize?: number;
   thumbnailUrl?: string;
   isPaid: boolean;
-  price?: number;
+  price?: number | string;  // TypeORM decimal columns are returned as strings at runtime
   isPublished: boolean;
   isDownloadable: boolean;
   downloadCount: number;
   viewCount: number;
   subject?: string;
   grade?: string;
+  topic?: string;
   createdAt: string;
   updatedAt: string;
   teacher?: {
@@ -46,11 +61,13 @@ export interface UploadContentData {
   title: string;
   description?: string;
   contentType: ContentType;
+  resourceType?: AcademicResourceType;
   language: string;
   isPaid: boolean;
   price?: number;
   subject?: string;
   grade?: string;
+  topic?: string;
   isDownloadable: boolean;
   isPublished: boolean;
   thumbnailUrl?: string;
@@ -64,6 +81,8 @@ export interface UpdateContentData {
   price?: number;
   subject?: string;
   grade?: string;
+  topic?: string;
+  resourceType?: AcademicResourceType;
   isDownloadable?: boolean;
   isPublished?: boolean;
   thumbnailUrl?: string;
@@ -71,7 +90,10 @@ export interface UpdateContentData {
 
 export interface ContentFilters {
   contentType?: ContentType;
+  resourceType?: AcademicResourceType;
   subject?: string;
+  grade?: string;
+  topic?: string;
   isPaid?: boolean;
   isPublished?: boolean;
   teacherId?: string;
@@ -84,6 +106,8 @@ export interface ContentAccessResponse {
   hasAccess: boolean;
   reason: string;
   canDownload: boolean;
+  price?: number | string;
+  teacherId?: string;
 }
 
 /**
@@ -95,11 +119,13 @@ export async function uploadContent(data: UploadContentData): Promise<Content> {
   formData.append('title', data.title);
   if (data.description) formData.append('description', data.description);
   formData.append('contentType', data.contentType);
+  if (data.resourceType) formData.append('resourceType', data.resourceType);
   formData.append('language', data.language);
   formData.append('isPaid', String(data.isPaid));
   if (data.price) formData.append('price', String(data.price));
   if (data.subject) formData.append('subject', data.subject);
   if (data.grade) formData.append('grade', data.grade);
+  if (data.topic) formData.append('topic', data.topic);
   formData.append('isDownloadable', String(data.isDownloadable));
   formData.append('isPublished', String(data.isPublished));
   if (data.thumbnailUrl) formData.append('thumbnailUrl', data.thumbnailUrl);
@@ -126,7 +152,10 @@ export async function getAllContent(filters?: ContentFilters): Promise<Content[]
   
   if (filters) {
     if (filters.contentType) params.append('contentType', filters.contentType);
+    if (filters.resourceType) params.append('resourceType', filters.resourceType);
     if (filters.subject) params.append('subject', filters.subject);
+    if (filters.grade) params.append('grade', filters.grade);
+    if (filters.topic) params.append('topic', filters.topic);
     if (filters.isPaid !== undefined) params.append('isPaid', String(filters.isPaid));
     if (filters.isPublished !== undefined) params.append('isPublished', String(filters.isPublished));
     if (filters.teacherId) params.append('teacherId', filters.teacherId);
@@ -193,6 +222,14 @@ export async function checkContentAccess(id: string): Promise<ContentAccessRespo
   }
 
   return response.json();
+}
+
+/**
+ * Get the streaming URL for video/audio content (used in <video src="...">).
+ * The browser sends Range headers automatically; the backend handles HTTP 206.
+ */
+export function getContentStreamUrl(id: string): string {
+  return `${API_BASE_URL}/api/content/${id}/stream`;
 }
 
 /**
@@ -315,3 +352,24 @@ export function getContentTypeLabel(contentType: ContentType): string {
   };
   return labels[contentType] || 'Unknown';
 }
+
+/**
+ * Helper: Get academic resource type label
+ */
+export function getAcademicResourceTypeLabel(type: AcademicResourceType): string {
+  const labels: Record<AcademicResourceType, string> = {
+    [AcademicResourceType.PAST_PAPER]: 'Past Examination Paper',
+    [AcademicResourceType.MODEL_PAPER]: 'Model Paper',
+    [AcademicResourceType.TEACHER_PAPER]: 'Teacher-created Paper',
+    [AcademicResourceType.MARKING_SCHEME]: 'Marking Scheme',
+    [AcademicResourceType.MARK_SHEET]: 'Mark Sheet',
+    [AcademicResourceType.TUTORIAL]: 'Tutorial',
+    [AcademicResourceType.LESSON_NOTES]: 'Lesson Notes',
+    [AcademicResourceType.REFERENCE_MATERIAL]: 'Reference Material',
+    [AcademicResourceType.PAPER_DISCUSSION]: 'Paper Discussion',
+    [AcademicResourceType.OTHER]: 'Other',
+  };
+  return labels[type] || 'Other';
+}
+
+export const ACADEMIC_RESOURCE_TYPES = Object.values(AcademicResourceType);

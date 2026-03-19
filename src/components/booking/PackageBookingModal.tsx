@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { AvailabilitySlot, formatTimeRange, formatDate, calculateDuration } from '@/lib/api/availability';
-import { createPackageBooking, Booking, BookingPackage, CreatePackageBookingResponse } from '@/lib/api/bookings';
+import { createPackageBooking, CreatePackageBookingResponse } from '@/lib/api/bookings';
 
 interface PackageBookingModalProps {
   isOpen: boolean;
-  slots: AvailabilitySlot[];
+  slots: (AvailabilitySlot & { teacherName?: string })[];
   teacherName: string;
+  packageDiscount3Plus?: number;
+  packageDiscount5Plus?: number;
   onClose: () => void;
   onSuccess: (response: CreatePackageBookingResponse) => void;
   onRemoveSlot: (slotId: string) => void;
@@ -17,6 +19,8 @@ export default function PackageBookingModal({
   isOpen,
   slots,
   teacherName,
+  packageDiscount3Plus = 5,
+  packageDiscount5Plus = 10,
   onClose,
   onSuccess,
   onRemoveSlot,
@@ -29,8 +33,14 @@ export default function PackageBookingModal({
   if (!isOpen || slots.length === 0) return null;
 
   // Price calculations
-  const totalPrice = slots.reduce((sum, s) => sum + (s.price ? Number(s.price) : 0), 0);
-  const discountPercentage = slots.length >= 5 ? 10 : slots.length >= 3 ? 5 : 0;
+  const totalPrice = slots.reduce((sum, s) => {
+    const effectivePrice = s.discountPercentage != null && Number(s.discountPercentage) > 0 
+      ? Number(s.price) * (1 - Number(s.discountPercentage) / 100) 
+      : (s.price ? Number(s.price) : 0);
+    return sum + effectivePrice;
+  }, 0);
+
+  const discountPercentage = slots.length >= 5 ? packageDiscount5Plus : slots.length >= 3 ? packageDiscount3Plus : 0;
   const finalPrice = Math.round(totalPrice * (1 - discountPercentage / 100) * 100) / 100;
   const savedAmount = Math.round((totalPrice - finalPrice) * 100) / 100;
 
@@ -67,7 +77,7 @@ export default function PackageBookingModal({
       <div className="flex min-h-full items-center justify-center p-4">
         <div className="relative w-full max-w-lg bg-white rounded-xl shadow-xl transform transition-all max-h-[90vh] flex flex-col">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
+          <div className="px-6 py-4 border-b border-gray-200 shrink-0">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -94,7 +104,7 @@ export default function PackageBookingModal({
             {/* Error */}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm flex items-start gap-2">
-                <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>{error}</span>
@@ -104,7 +114,7 @@ export default function PackageBookingModal({
             {/* Discount Banner */}
             {discountPercentage > 0 && (
               <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
                   <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                   </svg>
@@ -123,12 +133,12 @@ export default function PackageBookingModal({
             {/* Discount Hint (below threshold) */}
             {discountPercentage === 0 && slots.length < 3 && (
               <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs text-blue-700 flex items-start gap-2">
-                <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>
-                  Add {3 - slots.length} more session{3 - slots.length !== 1 ? 's' : ''} to get a <strong>5% discount</strong>!
-                  Book 5+ sessions for <strong>10% off</strong>.
+                  Add {3 - slots.length} more session{3 - slots.length !== 1 ? 's' : ''} to get a <strong>{packageDiscount3Plus}% discount</strong>!
+                  Book 5+ sessions for <strong>{packageDiscount5Plus}% off</strong>.
                 </span>
               </div>
             )}
@@ -163,7 +173,7 @@ export default function PackageBookingModal({
                       className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 group"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                        <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center shrink-0">
                           {index + 1}
                         </span>
                         <div className="min-w-0">
@@ -172,15 +182,28 @@ export default function PackageBookingModal({
                           </div>
                           <div className="text-xs text-gray-500">
                             {formatTimeRange(slot.startTime, slot.endTime)}
+                            {slot.teacherName && (
+                              <span className="text-blue-600 font-medium ml-1">
+                                • {slot.teacherName}
+                              </span>
+                            )}
                             <span className="text-gray-400 ml-1">({duration} min)</span>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-green-700">
-                          {slot.price != null && Number(slot.price) > 0
-                            ? `LKR ${Number(slot.price).toLocaleString()}`
-                            : 'Free'}
+                          {slot.discountPercentage != null && Number(slot.discountPercentage) > 0 ? (
+                            <div className="flex flex-col items-end">
+                              <span className="text-[10px] text-gray-400 line-through">LKR {Number(slot.price).toLocaleString()}</span>
+                              <span>LKR {(Number(slot.price) * (1 - Number(slot.discountPercentage) / 100)).toLocaleString()}</span>
+                              <span className="text-[10px] text-emerald-600 font-bold">{slot.discountPercentage}% OFF</span>
+                            </div>
+                          ) : slot.price != null && Number(slot.price) > 0 ? (
+                            `LKR ${Number(slot.price).toLocaleString()}`
+                          ) : (
+                            'Free'
+                          )}
                         </span>
                         <button
                           onClick={() => onRemoveSlot(slot.id)}
@@ -237,7 +260,7 @@ export default function PackageBookingModal({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 flex-shrink-0">
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 shrink-0">
             <button
               type="button"
               onClick={onClose}

@@ -5,6 +5,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import NotificationBell from '@/components/layout/NotificationBell';
+import { useCart } from '@/contexts/CartContext';
+import PackageBookingModal from '@/components/booking/PackageBookingModal';
+import { CreatePackageBookingResponse } from '@/lib/api/bookings';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -49,6 +53,37 @@ const navItems: NavItem[] = [
     roles: ['student'],
   },
   {
+    label: 'Recordings',
+    href: '/recordings',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    roles: ['student', 'admin', 'parent'],
+  },
+  {
+    label: 'My Exams',
+    href: '/exams',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
+    roles: ['student'],
+  },
+  {
+    label: 'My Progress',
+    href: '/student/analytics',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+    roles: ['student'],
+  },
+  {
     label: 'Bookings',
     href: '/bookings',
     icon: (
@@ -79,35 +114,55 @@ const navItems: NavItem[] = [
     roles: ['instructor'],
   },
   {
-    label: 'Manage Bookings',
-    href: '/instructor/bookings',
+    label: 'My Availability',
+    href: '/instructor/availability',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
       </svg>
     ),
     roles: ['instructor'],
   },
   {
-    label: 'Earnings & Payouts',
-    href: '/instructor/earnings',
+    label: 'Exams',
+    href: '/instructor/exams',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
       </svg>
     ),
     roles: ['instructor'],
   },
   {
-    label: 'Settings',
-    href: '/instructor/settings/pricing',
+    label: 'Recordings',
+    href: '/instructor/recordings',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.882v6.236a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
       </svg>
     ),
     roles: ['instructor'],
+  },
+
+  {
+    label: 'Transactions',
+    href: '/instructor/transactions',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+      </svg>
+    ),
+    roles: ['instructor'],
+  },
+  {
+    label: 'Analytics',
+    href: '/admin/analytics',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+    roles: ['admin'],
   },
   {
     label: 'Billing',
@@ -126,14 +181,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpenAt, setMobileMenuOpenAt] = useState<string | null>(null);
+  const [showCartModal, setShowCartModal] = useState(false);
+  const { cartItems, removeFromCart, clearCart } = useCart();
   const isMobileMenuOpen = mobileMenuOpenAt === pathname;
 
   const filteredNavItems = navItems.filter((item) => {
     if (!item.roles) return true;
     return user && item.roles.includes(user.role);
   }).map(item => {
-    if (item.label === 'Dashboard' && user?.role === 'admin') {
-      return { ...item, href: '/admin' };
+    if (user?.role === 'admin') {
+      if (item.label === 'Dashboard') return { ...item, href: '/admin' };
+      if (item.label === 'Browse Courses') return { ...item, href: '/admin/courses' };
     }
     return item;
   });
@@ -150,6 +208,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
       ? user.profilePicture
       : `${API_BASE_URL}${user.profilePicture}`
     : null;
+
+  const handlePackageSuccess = (response: CreatePackageBookingResponse) => {
+    setShowCartModal(false);
+    clearCart();
+    // Redirect to checkout if paid
+    if (response.package.finalPrice && Number(response.package.finalPrice) > 0) {
+      const recipientId = response.package.teacherId || response.bookings[0]?.teacherId;
+      router.push(`/payments/checkout?type=booking_package&referenceId=${response.package.id}&amount=${response.package.finalPrice}&recipientId=${recipientId}`);
+    } else {
+      router.push('/bookings');
+    }
+  };
+
+  const handleRemoveSlot = (slotId: string) => {
+    removeFromCart(slotId);
+  };
 
 
   if (isAdmin) {
@@ -190,7 +264,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <div className="p-6 border-t border-slate-100 bg-slate-50/50">
             <Link
               href="/profile"
-              className="flex items-center gap-3 p-4 rounded-2xl hover:bg-white transition shadow-sm hover:shadow-md group mb-3"
+              className="flex items-center justify-center p-3 rounded-2xl hover:bg-white transition shadow-sm hover:shadow-md group mb-3"
             >
               <div className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 border-2 border-white group-hover:border-blue-100 transition overflow-hidden shadow-inner relative">
                 {profilePicUrl ? (
@@ -200,15 +274,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-slate-900 truncate">
-                  {user?.firstName}
-                </p>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Identity Verified</p>
-                </div>
               </div>
             </Link>
             <button
@@ -230,9 +295,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <span className="text-white font-bold text-sm">L</span>
               </div>
             </Link>
-            <button onClick={() => setMobileMenuOpenAt(pathname)} className="p-2.5 bg-slate-100 rounded-xl text-slate-700 hover:bg-slate-200 transition">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-            </button>
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+              <button onClick={() => setMobileMenuOpenAt(pathname)} className="p-2.5 bg-slate-100 rounded-xl text-slate-700 hover:bg-slate-200 transition">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+              </button>
+            </div>
           </header>
 
           <main className="flex-1 p-6 sm:p-10 lg:p-14 bg-[#f8fafc]/50">
@@ -317,9 +385,48 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
               <div className="h-10 w-px bg-slate-200/60 hidden sm:block" />
 
+              {/* Cart Indicator */}
+              {user?.role === 'student' && cartItems.length > 0 && (
+                <button 
+                  onClick={() => setShowCartModal(true)}
+                  className="relative flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-blue-600 text-white shadow-[0_8px_20px_-6px_rgba(37,99,235,0.4)] hover:bg-blue-700 hover:shadow-[0_12px_25px_-4px_rgba(37,99,235,0.5)] transition-all group/cart group"
+                  title={`${cartItems.length} sessions selected in package - Click to finalize`}
+                >
+                  <div className="relative">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    <span className="absolute -top-2 -right-2 w-4 h-4 bg-white text-blue-600 text-[9px] font-bold rounded-full flex items-center justify-center border border-blue-100 group-hover:scale-110 transition-transform">
+                      {cartItems.length}
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider hidden lg:block">Review & Book</span>
+                  
+                  {/* Tooltip detail */}
+                  <div className="absolute top-full right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 p-4 opacity-0 invisible group-hover/cart:opacity-100 group-hover/cart:visible transition-all z-50 transform translate-y-2 group-hover/cart:translate-y-0 text-left">
+                    <p className="text-[11px] font-bold text-slate-900 mb-2">Package Summary ({cartItems.length} sessions)</p>
+                    <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
+                      {cartItems.slice(0, 3).map(item => (
+                        <div key={item.id} className="text-[10px] text-slate-500 border-l-2 border-blue-200 pl-2">
+                           <div className="font-semibold text-slate-700 truncate">{item.teacherName || 'Instructor'}</div>
+                           <div className="opacity-70">{new Date(item.startTime).toLocaleDateString()}</div>
+                        </div>
+                      ))}
+                      {cartItems.length > 3 && <div className="text-[10px] text-slate-400 italic mt-1 font-medium">+{cartItems.length - 3} more sessions...</div>}
+                    </div>
+                    <div className="pt-2 border-t border-slate-50 text-[10px] text-blue-600 font-bold flex items-center gap-1.5 animate-pulse">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Click to finish booking package
+                    </div>
+                  </div>
+                </button>
+              )}
+
+              <NotificationBell />
+
               <Link
                 href="/profile"
-                className="flex items-center gap-4 p-2 pl-2 pr-5 rounded-[20px] bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-blue-500/5 hover:border-blue-100 transition-all duration-300 group"
+                className="flex items-center justify-center p-2 rounded-[20px] bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-blue-500/5 hover:border-blue-100 transition-all duration-300 group"
               >
                 <div className="w-11 h-11 rounded-[14px] bg-white flex items-center justify-center text-slate-500 border border-slate-100 overflow-hidden shadow-sm group relative">
                   {profilePicUrl ? (
@@ -330,15 +437,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     </div>
                   )}
                   <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full ring-2 ring-emerald-500/20" />
-                </div>
-                <div className="hidden sm:block text-left">
-                  <p className="text-[13px] font-semibold text-slate-900 leading-tight mb-0.5 group-hover:text-blue-600 transition-colors">
-                    {user?.firstName}
-                  </p>
-                  <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-widest flex items-center gap-1.5 opacity-80">
-                    <span className="block w-1 h-1 rounded-full bg-blue-500" />
-                    {user?.role} Account
-                  </p>
                 </div>
               </Link>
 
@@ -391,6 +489,23 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
         </div>
       </footer>
+
+      {user?.role === 'student' && cartItems.length > 0 && (
+        <PackageBookingModal
+          isOpen={showCartModal}
+          slots={cartItems}
+          teacherName={(() => {
+            const uniqueTeachers = Array.from(new Set(cartItems.map(i => i.teacherName || 'Instructor')));
+            return uniqueTeachers.length === 1 ? uniqueTeachers[0] : 'Multiple Instructors';
+          })()}
+          onClose={() => setShowCartModal(false)}
+          onSuccess={handlePackageSuccess}
+          onRemoveSlot={handleRemoveSlot}
+          // Use 5%/10% defaults for multi-instructor
+          packageDiscount3Plus={5}
+          packageDiscount5Plus={10}
+        />
+      )}
     </div>
   );
 }

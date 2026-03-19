@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import AppLayout from '@/components/layout/AppLayout';
 import {
   getMyStudents,
@@ -200,13 +201,15 @@ export default function ParentDashboard() {
               >
                 <div className="flex items-center mb-4">
                   {student.profilePicture ? (
-                    <img
+                    <Image
                       src={student.profilePicture}
                       alt={`${student.firstName} ${student.lastName}`}
-                      className="w-12 h-12 rounded-full mr-3"
+                      width={48}
+                      height={48}
+                      className="rounded-full mr-3 object-cover"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-lg font-bold text-blue-700 mr-3">
+                    <div className="w-12 h-12 rounded-full bg-linear-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-lg font-bold text-blue-700 mr-3">
                       {student.firstName[0]}
                       {student.lastName[0]}
                     </div>

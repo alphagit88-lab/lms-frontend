@@ -89,6 +89,8 @@ export interface TeacherProfile {
   autoConfirmBookings: boolean;
   rating?: number;
   ratingCount: number;
+  packageDiscount3Plus: number;
+  packageDiscount5Plus: number;
   verified: boolean;
   verifiedAt?: string;
   totalSessions: number;
@@ -106,6 +108,8 @@ export interface UpdateTeacherProfileData {
   subjects?: string;
   availabilityTimezone?: string;
   autoConfirmBookings?: boolean;
+  packageDiscount3Plus?: number;
+  packageDiscount5Plus?: number;
 }
 
 export async function getMyTeacherProfile(): Promise<TeacherProfile | null> {
@@ -134,7 +138,8 @@ export async function getMyTeacherProfile(): Promise<TeacherProfile | null> {
     throw new Error(error.error || 'Failed to fetch teacher profile');
   }
 
-  return profileResponse.json();
+  const data = await profileResponse.json();
+  return data.profile ?? data;
 }
 
 export async function updateTeacherProfile(data: UpdateTeacherProfileData): Promise<TeacherProfile> {

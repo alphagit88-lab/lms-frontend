@@ -60,7 +60,7 @@ export default function CancelBookingModal({
   };
 
   const modalContent = (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
@@ -124,7 +124,7 @@ export default function CancelBookingModal({
                   : 'bg-red-50 border-red-200'
               }`}>
               <div className="flex items-start gap-3">
-                <div className={`mt-0.5 flex-shrink-0 ${policy.refundPercentage === 100
+                <div className={`mt-0.5 shrink-0 ${policy.refundPercentage === 100
                     ? 'text-green-600'
                     : policy.refundPercentage === 50
                       ? 'text-amber-600'

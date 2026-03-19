@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
@@ -29,11 +28,7 @@ export default function PackagesPage() {
   const [expandedBookings, setExpandedBookings] = useState<Booking[]>([]);
   const [expandedLoading, setExpandedLoading] = useState(false);
 
-  useEffect(() => {
-    loadPackages();
-  }, [statusFilter]);
-
-  async function loadPackages() {
+  const loadPackages = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -47,7 +42,11 @@ export default function PackagesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [statusFilter]);
+
+  useEffect(() => {
+    loadPackages();
+  }, [loadPackages]);
 
   async function toggleExpand(pkgId: string) {
     if (expandedId === pkgId) {
@@ -149,14 +148,12 @@ export default function PackagesPage() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
-                          {pkg.teacher && (
-                            <span className="flex items-center gap-1">
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
-                              {pkg.teacher.firstName} {pkg.teacher.lastName}
-                            </span>
-                          )}
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            {pkg.teacher ? `${pkg.teacher.firstName} ${pkg.teacher.lastName}` : 'Multi-Instructor'}
+                          </span>
                           <span>
                             {pkg.completedSessions}/{pkg.totalSessions} sessions
                           </span>
@@ -219,7 +216,7 @@ export default function PackagesPage() {
                                 className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-slate-200"
                               >
                                 <div className="flex items-center gap-3 min-w-0">
-                                  <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                                  <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
                                     {index + 1}
                                   </span>
                                   <div className="min-w-0">
@@ -228,6 +225,11 @@ export default function PackagesPage() {
                                     </div>
                                     <div className="text-xs text-slate-500">
                                       {formatTimeRange(booking.sessionStartTime, booking.sessionEndTime)}
+                                      {booking.teacher && !pkg.teacher && (
+                                        <span className="text-blue-600 font-medium ml-1">
+                                          • {booking.teacher.firstName} {booking.teacher.lastName}
+                                        </span>
+                                      )}
                                       <span className="text-slate-400 ml-1">({duration} min)</span>
                                     </div>
                                   </div>
@@ -252,6 +254,19 @@ export default function PackagesPage() {
                               {pkg.completedSessions} completed
                               {pkg.cancelledSessions > 0 && ` · ${pkg.cancelledSessions} cancelled`}
                             </div>
+                            
+                            {expandedBookings.some(b => b.status === 'pending_payment') && (
+                                <Link
+                                    href={`/payments/checkout?type=booking_package&referenceId=${pkg.id}&amount=${pkg.finalPrice}&recipientId=${pkg.teacherId}`}
+                                    className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 transition flex items-center gap-1.5"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                    </svg>
+                                    Pay for Package (LKR {Number(pkg.finalPrice).toLocaleString()})
+                                </Link>
+                            )}
+
                             {pkg.discountPercentage > 0 && (
                               <div className="text-emerald-700 font-medium">
                                 {pkg.discountPercentage}% package discount applied

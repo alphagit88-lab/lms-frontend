@@ -1,179 +1,242 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements } from "@stripe/react-stripe-js";
-import AppLayout from "@/components/layout/AppLayout";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import PaymentForm from "@/components/payment/PaymentForm";
-import { createPaymentIntent } from "@/lib/api/payments";
-import { CreditCard, CheckCircle, ShieldCheck } from "lucide-react";
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { initializePayment, PaymentRequest, PayHereCheckoutParams } from '@/lib/api/payments';
+import AppLayout from '@/components/layout/AppLayout';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-
-export default function CheckoutPage() {
+function CheckoutContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
+    const { user, loading: authLoading } = useAuth();
 
-    const [clientSecret, setClientSecret] = useState<string>("");
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [payHereParams, setPayHereParams] = useState<PayHereCheckoutParams | null>(null);
+    const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
 
-    const type = searchParams.get("type") as "booking_session" | "course_enrollment" | null;
-    const referenceId = searchParams.get("referenceId");
-    const amountStr = searchParams.get("amount");
-    const amount = amountStr ? parseFloat(amountStr) : 0;
+    const type = searchParams.get('type');
+    const referenceId = searchParams.get('referenceId');
+    const amountParam = searchParams.get('amount');
+    const recipientId = searchParams.get('recipientId');
+    const itemDescription = searchParams.get('itemDescription') || 'LMS Payment';
 
     useEffect(() => {
-        if (!type || !referenceId || !amount) {
-            setError("Missing checkout parameters. Please return and try again.");
-            setLoading(false);
+        if (!authLoading && !user) {
+            const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+            router.push(`/login?redirect=${returnUrl}`);
+        }
+    }, [authLoading, user, router]);
+
+    const handlePayment = async () => {
+        if (!user) return; // Should be handled by effect, but guard clause
+
+        if (!type || !referenceId || !amountParam) {
+            setError('Missing required payment parameters');
             return;
         }
 
-        const initializePayment = async () => {
-            try {
-                const response = await createPaymentIntent({
-                    type,
-                    referenceId,
-                    amount,
-                });
-                setClientSecret(response.clientSecret);
-            } catch (err) {
-                const error = err instanceof Error ? err : new Error("Failed to initialize payment.");
-                setError(error.message || "Failed to initialize payment.");
-            } finally {
-                setLoading(false);
+        try {
+            setLoading(true);
+            setError('');
+
+            const paymentData: PaymentRequest = {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                type: type as any,
+                referenceId,
+                amount: parseFloat(amountParam),
+                recipientId: recipientId || undefined,
+                itemDescription,
+                firstName: user.firstName || 'Student',
+                lastName: user.lastName || 'User',
+                email: user.email,
+                phone: '0000000000',
+            };
+
+            console.log('Initializing payment:', paymentData);
+            const response = await initializePayment(paymentData);
+            console.log('Payment initialized:', response);
+
+            if (response.isFree) {
+                router.push(`/payments/success?order_id=${response.paymentId}`);
+                return;
             }
-        };
 
-        initializePayment();
-    }, [type, referenceId, amount]);
-
-    const handleSuccess = () => {
-        setSuccess(true);
-        setTimeout(() => {
-            // Redirect based on type of payment
-            if (type === "booking_session") {
-                router.push("/bookings");
-            } else if (type === "course_enrollment") {
-                router.push("/student/my-courses");
+            if (response.checkoutParams && response.checkoutUrl) {
+                setPayHereParams(response.checkoutParams);
+                setCheckoutUrl(response.checkoutUrl);
             } else {
-                router.push("/payments");
+                setError('Invalid payment initialization response from server');
             }
-        }, 3000);
+        } catch (err: unknown) {
+            console.error('Payment error:', err);
+            if (err instanceof Error) {
+                setError(err.message || 'Payment initialization failed. Please try again.');
+            } else {
+                setError('An unknown error occurred. Please try again.');
+            }
+        } finally {
+            setLoading(false);
+        }
     };
 
-    if (loading) {
+    // Auto-submit form when params are ready
+    useEffect(() => {
+        if (payHereParams && checkoutUrl) {
+            const form = document.getElementById('payhere-form') as HTMLFormElement;
+            if (form) {
+                console.log('Submitting PayHere form...');
+                form.submit();
+            }
+        }
+    }, [payHereParams, checkoutUrl]);
+
+    if (authLoading || (loading && !payHereParams)) {
         return (
-            <ProtectedRoute>
-                <AppLayout>
-                    <div className="flex h-[50vh] items-center justify-center">
-                        <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
-                    </div>
-                </AppLayout>
-            </ProtectedRoute>
+            <div className="flex justify-center items-center min-h-[60vh]">
+                <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-500">Processing...</p>
+                </div>
+            </div>
         );
     }
+    
+    // Auth redirect handled in effect, show nothing while redirect happens if user null
+    if (!user) return null;
 
-    if (success) {
+    if (!type || !referenceId || !amountParam) {
         return (
-            <ProtectedRoute>
-                <AppLayout>
-                    <div className="max-w-md mx-auto py-20 px-4 text-center animate-in fade-in zoom-in duration-500">
-                        <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-100/50">
-                            <CheckCircle className="w-10 h-10" />
-                        </div>
-                        <h1 className="text-3xl font-bold text-slate-900 mb-3">Payment Successful!</h1>
-                        <p className="text-slate-500 mb-8">
-                            Your transaction has been securely processed. You will be redirected shortly...
-                        </p>
-                        <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto"></div>
-                    </div>
-                </AppLayout>
-            </ProtectedRoute>
+            <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-xl shadow-sm border border-red-200 text-center">
+                <h2 className="text-xl font-bold text-red-600 mb-2">Invalid Checkout Link</h2>
+                <p className="text-slate-600 mb-4">The payment link is missing required information.</p>
+                <button 
+                    onClick={() => router.back()}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 transition"
+                >
+                    Go Back
+                </button>
+            </div>
         );
     }
 
     return (
-        <ProtectedRoute>
-            <AppLayout>
-                <div className="max-w-4xl mx-auto py-10 px-4">
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
-                        {/* Summary Sidebar */}
-                        <div className="bg-slate-900 text-white rounded-3xl p-8 relative overflow-hidden shadow-2xl">
-                            <div className="absolute top-0 right-0 p-8 opacity-10">
-                                <CreditCard className="w-32 h-32 text-white" strokeWidth={1} />
-                            </div>
-
-                            <h2 className="text-sm font-bold tracking-widest uppercase text-slate-400 mb-6">Order Summary</h2>
-
-                            <div className="space-y-4 mb-8">
-                                <div className="flex justify-between items-center text-sm font-medium border-b border-white/10 pb-4">
-                                    <span className="text-slate-300">Description</span>
-                                    <span className="uppercase">{type?.replace('_', ' ')}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-sm font-medium border-b border-white/10 pb-4">
-                                    <span className="text-slate-300">Reference ID</span>
-                                    <span className="font-mono">{referenceId?.split('-')[0]}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-lg font-bold border-b border-white/10 pb-4">
-                                    <span className="text-white">Total Amount</span>
-                                    <span>LKR {amount.toFixed(2)}</span>
-                                </div>
-                            </div>
-
-                            <div className="mt-8 flex items-start gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
-                                <ShieldCheck className="w-6 h-6 text-emerald-400 flex-shrink-0" />
-                                <div>
-                                    <p className="text-sm font-bold text-white mb-1">Guaranteed Safe Checkout</p>
-                                    <p className="text-xs text-slate-400">Your personal details and payment information are encrypted and thoroughly secured by Stripe.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Payment Card Form */}
-                        <div>
-                            <h1 className="text-2xl font-bold text-slate-900 mb-2">Complete Payment</h1>
-                            <p className="text-slate-500 text-sm mb-6">Enter your debit or credit card details below to finalize your booking.</p>
-
-                            {error && (
-                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl shadow-sm mb-6 text-sm font-medium">
-                                    {error}
-                                </div>
-                            )}
-
-                            {clientSecret && (
-                                <div className="bg-white p-6 md:p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative">
-                                    <Elements
-                                        stripe={stripePromise}
-                                        options={{
-                                            clientSecret,
-                                            appearance: {
-                                                theme: 'stripe',
-                                                variables: {
-                                                    colorPrimary: '#2563eb', // blue-600
-                                                    borderRadius: '12px',
-                                                }
-                                            }
-                                        }}
-                                    >
-                                        <PaymentForm onSuccess={handleSuccess} amount={amount} />
-                                    </Elements>
-
-                                    <div className="absolute top-0 right-0 -m-3 p-2 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center gap-2 transform rotate-3 z-10 hidden sm:flex shadow-sm">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                                        <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">SSL Secured</span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+        <div className="max-w-2xl mx-auto py-10 px-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="bg-slate-50 px-8 py-6 border-b border-slate-200">
+                    <h1 className="text-2xl font-bold text-slate-900">Checkout</h1>
+                    <p className="text-slate-500 mt-1">Review your order details before payment</p>
                 </div>
-            </AppLayout>
-        </ProtectedRoute>
+                
+                <div className="p-8 space-y-6">
+                    {error && (
+                        <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm border border-red-200">
+                            {error}
+                        </div>
+                    )}
+
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 space-y-3">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="font-semibold text-slate-900 text-lg">{itemDescription}</h3>
+                                <p className="text-sm text-slate-500 capitalize">{type.replace('_', ' ')}</p>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-2xl font-bold text-slate-900">
+                                    LKR {parseFloat(amountParam).toLocaleString()}
+                                </div>
+                            </div>
+                        </div>
+                        {recipientId && (
+                            <div className="border-t border-slate-200 pt-3 flex justify-between text-sm text-slate-600">
+                                <span>Reference</span>
+                                <span className="font-mono text-xs bg-slate-200 px-2 py-0.5 rounded truncate max-w-50">{referenceId}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {!payHereParams ? (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3 p-4 border border-blue-100 bg-blue-50 rounded-lg text-blue-700 text-sm">
+                                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p>You will be redirected to PayHere securely to complete your payment.</p>
+                            </div>
+
+                            <button
+                                onClick={handlePayment}
+                                disabled={loading}
+                                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                            >
+                                {loading ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>PAY NOW</>
+                                )}
+                            </button>
+                            
+                            <button
+                                onClick={() => router.back()}
+                                className="w-full py-3 text-slate-500 hover:text-slate-700 font-medium text-sm transition"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="text-center py-8">
+                            <div className="w-12 h-12 border-4 border-slate-200 border-t-green-600 rounded-full animate-spin mx-auto mb-4"></div>
+                            <h3 className="text-lg font-medium text-slate-900">Redirecting to PayHere...</h3>
+                            <p className="text-sm text-slate-500 mt-2">Please do not close this window.</p>
+                        </div>
+                    )}
+
+                    {/* Hidden Form for PayHere */}
+                    {payHereParams && checkoutUrl && (
+                        <form 
+                            id="payhere-form" 
+                            method="post" 
+                            action={checkoutUrl} 
+                            className="hidden"
+                        >
+                            <input type="hidden" name="merchant_id" value={payHereParams.merchant_id} />
+                            <input type="hidden" name="return_url" value={payHereParams.return_url} />
+                            <input type="hidden" name="cancel_url" value={payHereParams.cancel_url} />
+                            <input type="hidden" name="notify_url" value={payHereParams.notify_url} />
+                            <input type="hidden" name="order_id" value={payHereParams.order_id} />
+                            <input type="hidden" name="items" value={payHereParams.items} />
+                            <input type="hidden" name="currency" value={payHereParams.currency} />
+                            <input type="hidden" name="amount" value={payHereParams.amount} />
+                            <input type="hidden" name="first_name" value={payHereParams.first_name} />
+                            <input type="hidden" name="last_name" value={payHereParams.last_name} />
+                            <input type="hidden" name="email" value={payHereParams.email} />
+                            <input type="hidden" name="phone" value={payHereParams.phone} />
+                            <input type="hidden" name="address" value={payHereParams.address} />
+                            <input type="hidden" name="city" value={payHereParams.city} />
+                            <input type="hidden" name="country" value={payHereParams.country} />
+                            <input type="hidden" name="hash" value={payHereParams.hash} />
+                        </form>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default function CheckoutPage() {
+    return (
+        <AppLayout>
+            <Suspense fallback={
+                <div className="flex justify-center items-center min-h-[60vh]">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+            }>
+                <CheckoutContent />
+            </Suspense>
+        </AppLayout>
     );
 }

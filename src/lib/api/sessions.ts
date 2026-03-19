@@ -52,6 +52,18 @@ class SessionAPI {
         return data.sessions;
     }
 
+    async getPastSessions(): Promise<Session[]> {
+        const data = await this.fetch('/api/sessions?type=past');
+        return data.sessions;
+    }
+
+    async getSessions(params?: { type?: 'upcoming' | 'past'; status?: string }): Promise<Session[]> {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const query = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+        const data = await this.fetch(`/api/sessions${query}`);
+        return data.sessions;
+    }
+
     async getSessionById(id: string): Promise<Session> {
         const data = await this.fetch(`/api/sessions/${id}`);
         return data.session;

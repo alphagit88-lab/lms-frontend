@@ -25,6 +25,8 @@ export interface TeacherProfile {
   hourlyRate?: number;
   teachingLanguages?: string;
   subjects?: string;
+  packageDiscount3Plus?: number;
+  packageDiscount5Plus?: number;
   autoConfirmBookings: boolean;
   totalSessions: number;
   totalStudents: number;
@@ -86,8 +88,8 @@ export async function getTeacherProfile(teacherId: string): Promise<TeacherProfi
  * Uses the public endpoint with own teacherId — requires user to know their ID.
  * Alternatively, use updateTeacherProfile with empty body to create if needed.
  */
-export async function getMyTeacherProfile(teacherId: string): Promise<TeacherProfile> {
-  const data = await apiFetch(`/api/profiles/teacher/${teacherId}`);
+export async function getMyTeacherProfile(): Promise<TeacherProfile> {
+  const data = await apiFetch('/api/profiles/teacher/me');
   return data.profile;
 }
 
@@ -104,11 +106,21 @@ export async function updateTeacherProfile(data: {
   subjects?: string;
   availabilityTimezone?: string;
   autoConfirmBookings?: boolean;
+  packageDiscount3Plus?: number;
+  packageDiscount5Plus?: number;
 }): Promise<{ message: string; profile: TeacherProfile }> {
   return apiFetch('/api/profiles/teacher', {
     method: 'PUT',
     body: JSON.stringify(data),
   });
+}
+
+/**
+ * Get teachers who teach similar subjects to the given teacher
+ */
+export async function getSimilarTeachers(teacherId: string, limit = 5): Promise<TeacherProfile[]> {
+  const data = await apiFetch(`/api/profiles/teacher/${teacherId}/similar?limit=${limit}`);
+  return data.teachers ?? [];
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────

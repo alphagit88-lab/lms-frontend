@@ -57,10 +57,12 @@ export interface PendingTeacher {
     id: string;
     teacherId: string;
     verified: boolean;
-    bio: string | null;
-    qualifications: string | null;
-    specializations: string[];
-    hourlyRate: number | null;
+    qualifications?: string | null;
+    specialization?: string | null;
+    yearsExperience?: number | null;
+    hourlyRate?: number | null;
+    subjects?: string | null;
+    teachingLanguages?: string | null;
     createdAt: string;
     teacher: {
         id: string;
@@ -68,6 +70,62 @@ export interface PendingTeacher {
         lastName: string;
         email: string;
     };
+}
+
+export interface AdminPayment {
+    id: string;
+    studentId: string;
+    courseId: string | null;
+    amount: number;
+    currency: string;
+    paymentMethod: string;
+    paymentType: string;
+    status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+    paymentStatus: string;
+    refundAmount: number | null;
+    refundDate: string | null;
+    transactionId: string | null;
+    bankSlipUrl: string | null;
+    createdAt: string;
+    student: { firstName: string; lastName: string; email: string };
+    instructor: { firstName: string; lastName: string; email: string } | null;
+    course: { title: string } | null;
+}
+
+export interface AdminEnrollment {
+    id: string;
+    studentId: string;
+    courseId: string;
+    enrolledAt: string;
+    progress: number;
+    student: { firstName: string; lastName: string; email: string };
+    course: { title: string };
+}
+
+export interface ManualPayment {
+    id: string;
+    userId: string;
+    amount: number;
+    currency: string;
+    paymentType: string;
+    paymentStatus: string;
+    bankSlipUrl?: string | null;
+    manualReviewNote?: string | null;
+    referenceId: string;
+    metadata?: { courseIds?: string[] } | null;
+    createdAt: string;
+    updatedAt: string;
+    user?: { firstName: string; lastName: string; email: string };
+}
+
+export interface AdminParentLink {
+    id: string;
+    studentId: string;
+    parentId: string;
+    status: 'pending' | 'accepted' | 'rejected';
+    createdAt: string;
+    student: { firstName: string; lastName: string; email: string };
+    parent: { firstName: string; lastName: string; email: string };
 }
 
 /* ── API Functions ─────────────────────────────────── */
@@ -112,4 +170,58 @@ export async function rejectTeacher(teacherId: string, reason?: string): Promise
         method: 'PATCH',
         body: JSON.stringify({ reason }),
     });
+}
+
+export async function getPayments(params?: { page?: number; status?: string; method?: string }): Promise<{ payments: AdminPayment[], total: number, totalPages: number }> {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.status) qs.set('status', params.status);
+    if (params?.method) qs.set('method', params.method);
+    return apiFetch(`/api/admin/payments${qs.toString() ? `?${qs.toString()}` : ''}`);
+}
+
+export async function getEnrollments(params?: { page?: number }): Promise<{ enrollments: AdminEnrollment[], total: number, totalPages: number }> {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    return apiFetch(`/api/admin/enrollments${qs.toString() ? `?${qs.toString()}` : ''}`);
+}
+
+export async function confirmPayment(paymentId: string): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/payments/${paymentId}/confirm`, { method: 'POST' });
+}
+
+export async function cancelPayment(paymentId: string): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/payments/${paymentId}/cancel`, { method: 'POST' });
+}
+
+export async function getPendingManualPayments(): Promise<{ payments: ManualPayment[] }> {
+    return apiFetch('/api/admin/payments/bank-transfer/pending');
+}
+
+export async function reviewManualPayment(
+    paymentId: string,
+    action: 'approve' | 'reject',
+    note?: string
+): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/payments/bank-transfer/${paymentId}/review`, {
+        method: 'POST',
+        body: JSON.stringify({ action, note }),
+    });
+}
+
+export async function getParentLinks(params?: { page?: number }): Promise<{ links: AdminParentLink[], total: number, totalPages: number }> {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    return apiFetch(`/api/admin/parent-links${qs.toString() ? `?${qs.toString()}` : ''}`);
+}
+
+export async function createParentLink(data: { studentId: string, parentId: string, status?: string }): Promise<{ message: string, link: AdminParentLink }> {
+    return apiFetch('/api/admin/parent-links', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function removeParentLink(linkId: string): Promise<{ message: string }> {
+    return apiFetch(`/api/admin/parent-links/${linkId}`, { method: 'DELETE' });
 }

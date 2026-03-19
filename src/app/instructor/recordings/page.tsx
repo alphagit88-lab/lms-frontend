@@ -14,6 +14,7 @@ import {
   formatRelativeTime,
   getQualityBadgeColor,
 } from '@/lib/api/recordings';
+import { sessionApi, Session as LiveSession } from '@/lib/api/sessions';
 import AppLayout from '@/components/layout/AppLayout';
 
 export default function InstructorRecordingsPage() {
@@ -108,7 +109,7 @@ export default function InstructorRecordingsPage() {
                   <p className="text-sm font-medium text-gray-600">Total Recordings</p>
                   <p className="text-2xl font-bold text-gray-900 mt-2">{totalRecordings}</p>
                 </div>
-                <div className="text-4xl">🎥</div>
+                <div className="p-3 bg-blue-100 rounded-full"><svg className="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>
               </div>
             </div>
 
@@ -118,7 +119,7 @@ export default function InstructorRecordingsPage() {
                   <p className="text-sm font-medium text-gray-600">Public</p>
                   <p className="text-2xl font-bold text-green-600 mt-2">{publicRecordings}</p>
                 </div>
-                <div className="text-4xl">🌐</div>
+                <div className="p-3 bg-green-100 rounded-full"><svg className="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" /></svg></div>
               </div>
             </div>
 
@@ -130,7 +131,7 @@ export default function InstructorRecordingsPage() {
                     {totalViews.toLocaleString()}
                   </p>
                 </div>
-                <div className="text-4xl">👁️</div>
+                <div className="p-3 bg-indigo-100 rounded-full"><svg className="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></div>
               </div>
             </div>
 
@@ -142,7 +143,7 @@ export default function InstructorRecordingsPage() {
                     {Math.floor(totalDuration / 60)}h {Math.floor(totalDuration % 60)}m
                   </p>
                 </div>
-                <div className="text-4xl">⏱️</div>
+                <div className="p-3 bg-purple-100 rounded-full"><svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
               </div>
             </div>
           </div>
@@ -200,7 +201,7 @@ export default function InstructorRecordingsPage() {
           ) : filteredRecordings.length === 0 ? (
             /* Empty State */
             <div className="bg-white rounded-lg shadow p-12 text-center">
-              <div className="text-6xl mb-4">🎥</div>
+              <div className="flex justify-center mb-4"><svg className="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No recordings yet</h3>
               <p className="text-gray-600 mb-6">
                 {searchQuery || filterPublic !== 'all'
@@ -231,8 +232,8 @@ export default function InstructorRecordingsPage() {
                         className="object-cover"
                       />
                     ) : (
-                      <div className="flex items-center justify-center h-full text-6xl">
-                        🎥
+                      <div className="flex items-center justify-center h-full">
+                        <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                       </div>
                     )}
                     {/* Duration Badge */}
@@ -257,13 +258,13 @@ export default function InstructorRecordingsPage() {
 
                     {recording.session?.class && (
                       <p className="text-sm text-gray-600 mb-2">
-                        📚 {recording.session.class.name}
+                        {recording.session.class.name}
                       </p>
                     )}
 
                     <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                      <span>👁️ {recording.viewCount}</span>
-                      {recording.fileSize && <span>💾 {formatFileSize(recording.fileSize)}</span>}
+                      <span>{recording.viewCount} views</span>
+                      {recording.fileSize && <span>{formatFileSize(recording.fileSize)}</span>}
                     </div>
 
                     <div className="flex items-center justify-between mb-3">
@@ -273,7 +274,7 @@ export default function InstructorRecordingsPage() {
                             : 'bg-gray-100 text-gray-800'
                           }`}
                       >
-                        {recording.isPublic ? '🌐 Public' : '🔒 Private'}
+                        {recording.isPublic ? 'Public' : 'Private'}
                       </span>
                       <span className="text-xs text-gray-500">
                         {formatRelativeTime(recording.uploadedAt)}
@@ -286,20 +287,20 @@ export default function InstructorRecordingsPage() {
                         onClick={() => window.open(recording.fileUrl, '_blank')}
                         className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
                       >
-                        ▶️ Play
+                        Play
                       </button>
                       <button
                         onClick={() => handleEdit(recording)}
                         className="px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm font-medium"
                       >
-                        ✏️
+                        Edit
                       </button>
                       <button
                         onClick={() => handleDelete(recording.id)}
                         disabled={deletingId === recording.id}
                         className="px-3 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm font-medium disabled:opacity-50"
                       >
-                        {deletingId === recording.id ? '...' : '🗑️'}
+                        {deletingId === recording.id ? '...' : 'Delete'}
                       </button>
                     </div>
                   </div>
@@ -342,7 +343,6 @@ function RecordingModal({
   const [formData, setFormData] = useState<CreateRecordingData>({
     sessionId: recording?.sessionId || '',
     fileUrl: recording?.fileUrl || '',
-    fileSize: recording?.fileSize,
     durationMinutes: recording?.durationMinutes,
     videoQuality: recording?.videoQuality || '',
     thumbnailUrl: recording?.thumbnailUrl || '',
@@ -351,6 +351,34 @@ function RecordingModal({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [sessions, setSessions] = useState<LiveSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+
+  // Load instructor's sessions for the dropdown
+  useEffect(() => {
+    if (recording) return; // not needed when editing
+    setSessionsLoading(true);
+    // Fetch both upcoming and past sessions so recordings can be linked
+    sessionApi.getSessions()
+      .then((data) => setSessions(data))
+      .catch(() => setSessions([]))
+      .finally(() => setSessionsLoading(false));
+  }, [recording]);
+
+  // YouTube Thumbnail Auto-Detection
+  useEffect(() => {
+    if (formData.fileUrl && !formData.thumbnailUrl) {
+      const ytMatch = formData.fileUrl.match(/(?:youtube\.be\/|youtube\.com\/(?:watch\?v=|v\/|embed\/|user\/[^\/]+\/u\/1\/|oembed\?url=))([^#\&\?]*)/);
+      if (ytMatch && ytMatch[1]) {
+        const videoId = ytMatch[1];
+        setFormData(prev => ({
+          ...prev,
+          thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+          videoQuality: prev.videoQuality || '720p' // Default to 720p for YT links
+        }));
+      }
+    }
+  }, [formData.fileUrl, formData.thumbnailUrl]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -394,7 +422,7 @@ function RecordingModal({
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
             >
-              ×
+              &times;
             </button>
           </div>
 
@@ -407,23 +435,36 @@ function RecordingModal({
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Session ID (required for new recordings) */}
+            {/* Session dropdown (only for new recordings) */}
             {!recording && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Session ID <span className="text-red-500">*</span>
+                  Session <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={formData.sessionId}
-                  onChange={(e) => setFormData({ ...formData, sessionId: e.target.value })}
-                  required
-                  placeholder="Enter session ID"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  The UUID of the session this recording belongs to
-                </p>
+                {sessionsLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+                    <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                    Loading your sessions...
+                  </div>
+                ) : sessions.length === 0 ? (
+                  <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    No upcoming sessions found. Create a session first from the Live Sessions page.
+                  </p>
+                ) : (
+                  <select
+                    value={formData.sessionId}
+                    onChange={(e) => setFormData({ ...formData, sessionId: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="">â€” Select a session â€”</option>
+                    {sessions.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.title} ({new Date(s.startTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             )}
 
@@ -495,25 +536,7 @@ function RecordingModal({
               />
             </div>
 
-            {/* File Size */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                File Size (bytes)
-              </label>
-              <input
-                type="number"
-                value={formData.fileSize || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, fileSize: Number(e.target.value) || undefined })
-                }
-                placeholder="524288000"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Optional: Size in bytes (e.g., 524288000 = 500 MB)
-              </p>
-            </div>
+
 
             {/* Is Public */}
             <div className="flex items-center">

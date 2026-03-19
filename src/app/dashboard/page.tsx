@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
+import InstructorAnalyticsSection from '@/components/instructor/InstructorAnalyticsSection';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -40,8 +42,8 @@ function StatCard({
   accent: string;
 }) {
   return (
-    <div className="bg-white/70 backdrop-blur-md rounded-[24px] border border-white/40 p-7 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_50px_-12px_rgba(0,0,0,0.08)] hover:-translate-y-1.5 transition-all duration-500 group flex items-center gap-6">
-      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform duration-500 group-hover:scale-110 shadow-lg ${accent}`}>
+    <div className="bg-white/70 backdrop-blur-md rounded-3xl border border-white/40 p-7 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_50px_-12px_rgba(0,0,0,0.08)] hover:-translate-y-1.5 transition-all duration-500 group flex items-center gap-6">
+      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-110 shadow-lg ${accent}`}>
         {icon}
       </div>
       <div>
@@ -73,7 +75,7 @@ function ActionCard({
   return (
     <button
       onClick={onClick}
-      className={`${gradient} relative group rounded-[32px] p-8 text-left border border-white/20 shadow-[0_12px_45px_-10px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] hover:-translate-y-2.5 transition-all duration-500 overflow-hidden flex flex-col items-start gap-5`}
+      className={`${gradient} relative group rounded-4xl p-8 text-left border border-white/20 shadow-[0_12px_45px_-10px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] hover:-translate-y-2.5 transition-all duration-500 overflow-hidden flex flex-col items-start gap-5`}
     >
       <div className="absolute top-0 right-0 p-8 opacity-5 transform group-hover:scale-150 transition-transform duration-[1.5s] ease-out">
         {icon}
@@ -85,7 +87,7 @@ function ActionCard({
         <h4 className="text-lg font-semibold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors tracking-tight">
           {title}
         </h4>
-        <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-[200px] opacity-90">
+        <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-50 opacity-90">
           {description}
         </p>
       </div>
@@ -135,15 +137,17 @@ export default function DashboardPage() {
         <div className="mb-14 group">
           <div className="relative rounded-[40px] overflow-hidden shadow-lg hover:shadow-xl transition-all duration-700">
             {/* Soft Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-indigo-900" />
+            <div className="absolute inset-0 bg-linear-to-br from-slate-900 to-indigo-900" />
 
             <div className="relative px-10 sm:px-14 py-16 sm:py-20 flex flex-col lg:flex-row items-center justify-between gap-10">
               <div className="flex items-center gap-10 flex-1 min-w-0">
-                <div className="hidden sm:block flex-shrink-0 relative">
+                <div className="hidden sm:block shrink-0 relative">
                   {profilePicUrl ? (
-                    <img
+                    <Image
                       src={profilePicUrl}
                       alt="Profile"
+                      width={96}
+                      height={96}
                       className="w-24 h-24 rounded-3xl border-2 border-white/20 object-cover shadow-2xl relative z-10"
                     />
                   ) : (
@@ -194,6 +198,7 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-10">
                 <ActionCard icon={icons.search} title="Discover Courses" description="Explore our catalog of educational content" onClick={() => router.push('/courses')} gradient="bg-slate-50" />
                 <ActionCard icon={icons.book} title="My Curriculum" description="Access your enrolled courses and materials" onClick={() => router.push('/student/my-courses')} gradient="bg-slate-50" />
+                <ActionCard icon={icons.play} title="Browse Content" description="Watch videos, read PDFs, and purchase resources" onClick={() => router.push('/content')} gradient="bg-slate-50" />
                 <ActionCard icon={icons.calendar} title="Book 1-on-1" description="Schedule private sessions with instructors" onClick={() => router.push('/teachers')} gradient="bg-slate-50" />
                 <ActionCard icon={icons.chart} title="My Progress" description="Insights into your learning journey" onClick={() => router.push('/student/my-courses')} gradient="bg-slate-50" />
               </div>
@@ -207,7 +212,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               <StatCard icon={icons.users} label="Reach" value="142 Students" sub="Active learners" accent="bg-white text-blue-600" />
               <StatCard icon={icons.calendar} label="Pipeline" value="8 Bookings" sub="Next 7 days" accent="bg-white text-indigo-600" />
-              <StatCard icon={icons.wallet} label="Yield" value="$4,280" sub="Earnings this month" accent="bg-white text-emerald-600" />
+              <StatCard icon={icons.wallet} label="Yield" value="LKR 428,000" sub="Earnings this month" accent="bg-white text-emerald-600" />
               <StatCard icon={icons.chart} label="Trust" value="4.9/5" sub="Average rating" accent="bg-white text-amber-600" />
             </div>
 
@@ -218,9 +223,13 @@ export default function DashboardPage() {
                 <ActionCard icon={icons.clock} title="Set Availability" description="Manage your teaching hours and slots" onClick={() => router.push('/instructor/availability')} gradient="bg-slate-50" />
                 <ActionCard icon={icons.play} title="Live Classroom" description="Start instant live interactive sessions" onClick={() => router.push('/instructor/sessions')} gradient="bg-slate-50" />
                 <ActionCard icon={icons.plus} title="New Course" description="Design and publish elite curriculum" onClick={() => router.push('/instructor/courses/create')} gradient="bg-slate-50" />
-                <ActionCard icon={icons.upload} title="Assets" description="Manage PDFs, videos, and handouts" onClick={() => router.push('/instructor/content')} gradient="bg-slate-50" />
+                <ActionCard icon={icons.upload} title="Content Library" description="Manage PDFs, videos, and handouts" onClick={() => router.push('/instructor/content')} gradient="bg-slate-50" />
+                <ActionCard icon={icons.eye} title="Exams & Assessments" description="Create, grade, and publish exam scores" onClick={() => router.push('/instructor/exams')} gradient="bg-slate-50" />
+                <ActionCard icon={icons.chart} title="Instructor Hub" description="Full instructor dashboard overview" onClick={() => router.push('/instructor/dashboard')} gradient="bg-slate-50" />
               </div>
             </section>
+
+            <InstructorAnalyticsSection />
           </div>
         )}
 

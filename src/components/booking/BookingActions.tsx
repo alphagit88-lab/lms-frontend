@@ -29,22 +29,47 @@ export default function BookingActions({
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
-  // ── Pending: Approve / Reject ──
-  if (booking.status === 'pending') {
+  // ── Pending / Awaiting Payment: Approve / Reject ──
+  if (booking.status === 'pending' || booking.status === 'pending_payment') {
+
+    // For paid bookings awaiting payment, teacher cannot approve yet
+    const isAwaitingPayment = booking.status === 'pending_payment';
+
     return (
       <div className="flex flex-col gap-2 w-full sm:w-auto">
         {!showConfirmForm && !showCancelForm && (
           <>
-            <button
-              onClick={() => setShowConfirmForm(true)}
-              disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Approve
-            </button>
+            {isAwaitingPayment ? (
+              /* Payment not yet received — show informational badge, not an approve button */
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                  <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className="text-xs font-semibold text-amber-800">Awaiting Payment</p>
+                    <p className="text-xs text-amber-600">
+                      {booking.amount ? `LKR ${Number(booking.amount).toFixed(2)} — ` : ''}
+                      Approve will unlock once student pays
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* PENDING (payment done or free slot) — teacher can approve */
+              <button
+                onClick={() => setShowConfirmForm(true)}
+                disabled={loading}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Approve
+              </button>
+            )}
+
+            {/* Reject is always available (teacher can decline even unpaid bookings) */}
             <button
               onClick={() => setShowCancelForm(true)}
               disabled={loading}
@@ -58,7 +83,7 @@ export default function BookingActions({
           </>
         )}
 
-        {/* Approve form — optional meeting link */}
+        {/* Approve form — optional meeting link (only shown for PENDING, not PENDING_PAYMENT) */}
         {showConfirmForm && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2 w-full sm:w-64">
             <label className="block text-xs font-medium text-green-800">
@@ -68,10 +93,13 @@ export default function BookingActions({
               type="url"
               value={meetingLink}
               onChange={(e) => setMeetingLink(e.target.value)}
-              placeholder="https://zoom.us/j/..."
+              placeholder="Leave empty to auto-create Zoom"
               className="w-full px-2.5 py-1.5 text-sm border border-green-300 rounded-md focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none bg-white"
               disabled={loading}
             />
+            <p className="text-[10px] text-green-600">
+              System will automatically generate a Zoom meeting if left blank.
+            </p>
             <div className="flex gap-2">
               <button
                 onClick={() => {
@@ -146,6 +174,7 @@ export default function BookingActions({
       </div>
     );
   }
+
 
   // ── Confirmed & Upcoming: Cancel, (on session day: Complete / No-Show) ──
   if (booking.status === 'confirmed') {

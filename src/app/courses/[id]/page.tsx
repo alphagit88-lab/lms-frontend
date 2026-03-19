@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,7 +23,7 @@ export default function CourseDetailPage() {
     if (courseId) {
       loadCourse();
     }
-  }, [courseId]);
+  }, [courseId]); // loadCourse is defined outside effect, dependency not needed
 
   const loadCourse = async () => {
     try {
@@ -46,18 +47,22 @@ export default function CourseDetailPage() {
 
     setEnrolling(true);
     // Push to the new checkout system
+    const basePrice = course?.price || 0;
+    const discountPercent = course?.discountPercentage || 0;
+    const effectivePrice = Math.round(basePrice * (1 - discountPercent / 100) * 100) / 100;
     const checkoutUrl = new URL(window.location.origin + '/checkout');
     checkoutUrl.searchParams.append('type', 'course_enrollment');
     checkoutUrl.searchParams.append('referenceId', courseId);
-    checkoutUrl.searchParams.append('price', course?.price?.toString() || "0");
+    checkoutUrl.searchParams.append('price', effectivePrice.toString());
     checkoutUrl.searchParams.append('title', course?.title || "");
+    if (course?.instructorId) checkoutUrl.searchParams.append('recipientId', course.instructorId);
 
     router.push(checkoutUrl.pathname + checkoutUrl.search);
   };
 
   const formatPrice = (price: number | string | undefined) => {
     const numPrice = Number(price || 0);
-    return numPrice === 0 ? 'Free' : `$${numPrice.toFixed(2)}`;
+    return numPrice === 0 ? 'Free' : `LKR ${numPrice.toLocaleString()}`;
   };
 
   const getLevelBadgeColor = (level: string) => {
@@ -120,7 +125,7 @@ export default function CourseDetailPage() {
         {/* Left: Course Info */}
         <div className="lg:col-span-2">
           {/* Hero Section */}
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-8 mb-8">
+          <div className="bg-linear-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-8 mb-8">
             {course.category && (
               <span className="text-xs font-medium text-blue-300 bg-blue-900/40 px-2.5 py-1 rounded-full">
                 {course.category.name}
@@ -196,26 +201,85 @@ export default function CourseDetailPage() {
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 {course.lessons
                   .sort((a, b) => a.sortOrder - b.sortOrder)
-                  .map((lesson, index) => (
+                  .map((lesson, index) => {
+                    const canWatch = course.isEnrolled || lesson.isPreview || isInstructor;
+                    const row = (
+                      <div className="flex items-center justify-between p-4 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition">
+                        <div className="flex items-center flex-1">
+                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-sm font-semibold text-slate-700 mr-3 shrink-0">
+                            {canWatch ? (
+                              <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                            ) : index + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-slate-900 text-sm">{lesson.title}</div>
+                            {lesson.durationMinutes > 0 && (
+                              <div className="text-xs text-slate-500">{lesson.durationMinutes} min</div>
+                            )}
+                          </div>
+                        </div>
+                        {lesson.isPreview ? (
+                          <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium ml-2">
+                            Preview
+                          </span>
+                        ) : !course.isEnrolled && !isInstructor && (
+                          <svg className="w-4 h-4 text-slate-300 ml-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                        )}
+                      </div>
+                    );
+                    return canWatch ? (
+                      <Link key={lesson.id} href={`/courses/${courseId}/lessons/${lesson.id}`}>
+                        {row}
+                      </Link>
+                    ) : (
+                      <div key={lesson.id}>{row}</div>
+                    );
+                  })}
+              </div>
+            </section>
+          )}
+
+          {/* Exams */}
+          {course.exams && course.exams.length > 0 && (
+            <section className="mb-8">
+              <h2 className="text-lg font-bold text-slate-900 mb-4">Exams & Assessments</h2>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                {course.exams
+                  .filter(exam => exam.isPublished || isInstructor)
+                  .map((exam) => (
                     <div
-                      key={lesson.id}
+                      key={exam.id}
                       className="flex items-center justify-between p-4 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition"
                     >
                       <div className="flex items-center flex-1">
-                        <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-sm font-semibold text-slate-700 mr-3 flex-shrink-0">
-                          {index + 1}
+                        <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mr-3 shrink-0">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-slate-900 text-sm">{lesson.title}</div>
-                          {lesson.durationMinutes > 0 && (
-                            <div className="text-xs text-slate-500">{lesson.durationMinutes} min</div>
-                          )}
+                          <div className="font-medium text-slate-900 text-sm">{exam.title}</div>
+                          <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
+                            {(exam.durationMinutes ?? 0) > 0 ? `${exam.durationMinutes} min` : 'Untimed'} • {exam.totalMarks} Marks
+                            <span className="inline-block w-1 h-1 bg-slate-300 rounded-full" />
+                            {exam.examType.toUpperCase().replace('_', ' ')}
+                          </div>
                         </div>
                       </div>
-                      {lesson.isPreview && (
-                        <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium ml-2">
-                          Preview
+
+                      {course.isEnrolled && exam.isPublished ? (
+                        <Link
+                          href={`/exams/${exam.id}/take`}
+                          className="text-xs bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-blue-700 hover:-translate-y-0.5 transition-all shadow-blue-600/20"
+                        >
+                          Take Exam
+                        </Link>
+                      ) : isInstructor ? (
+                        <span className="text-xs bg-gray-100 text-gray-600 border border-gray-200 px-3 py-1 rounded-full font-medium ml-2">
+                          {exam.isPublished ? 'Published' : 'Draft'}
                         </span>
+                      ) : (
+                        <span className="text-xs text-slate-400 bg-slate-50 px-3 py-1 rounded-full border border-slate-100 font-medium">Enrolled Students Only</span>
                       )}
                     </div>
                   ))}
@@ -227,17 +291,37 @@ export default function CourseDetailPage() {
         {/* Right: Enrollment Card */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sticky top-24">
-            {course.thumbnail ? (
+            {course.previewVideoUrl ? (
+              <video src={course.previewVideoUrl} controls poster={course.thumbnail} className="w-full aspect-video object-cover rounded-lg mb-5 bg-black" />
+            ) : course.thumbnail ? (
               <img src={course.thumbnail} alt={course.title} className="w-full aspect-video object-cover rounded-lg mb-5" />
             ) : (
-              <div className="w-full aspect-video bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg mb-5 flex items-center justify-center">
+              <div className="w-full aspect-video bg-linear-to-br from-slate-100 to-slate-200 rounded-lg mb-5 flex items-center justify-center">
                 <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.206 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.794 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.794 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.206 18 16.5 18s-3.332.477-4.5 1.253" />
                 </svg>
               </div>
             )}
 
-            <div className="text-3xl font-bold text-slate-900 mb-5">{formatPrice(course.price)}</div>
+            <div className="mb-5">
+              {course.discountPercentage != null && Number(course.discountPercentage) > 0 ? (
+                <div className="flex flex-col">
+                  <span className="text-sm text-slate-400 line-through decoration-red-400">
+                    {formatPrice(course.price)}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl font-bold text-emerald-600">
+                      {formatPrice(Math.round(Number(course.price) * (1 - Number(course.discountPercentage) / 100) * 100) / 100)}
+                    </span>
+                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-lg uppercase tracking-wider">
+                      {course.discountPercentage}% OFF
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-3xl font-bold text-slate-900">{formatPrice(course.price)}</div>
+              )}
+            </div>
 
             {isInstructor ? (
               <Link
@@ -247,12 +331,19 @@ export default function CourseDetailPage() {
                 Edit Course
               </Link>
             ) : course.isEnrolled ? (
-              <button disabled className="w-full px-5 py-3 bg-emerald-600 text-white rounded-lg font-medium text-sm cursor-not-allowed mb-4 flex items-center justify-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Enrolled
-              </button>
+              course.lessons && course.lessons.length > 0 ? (
+                <Link
+                  href={`/courses/${courseId}/lessons/${course.lessons.sort((a, b) => a.sortOrder - b.sortOrder)[0].id}`}
+                  className="block w-full px-5 py-3 bg-emerald-600 text-white rounded-lg font-medium text-sm hover:bg-emerald-700 transition mb-4 text-center items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                  Start Learning
+                </Link>
+              ) : (
+                <div className="w-full px-5 py-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-sm font-medium text-center mb-4">
+                  ✓ Enrolled — Content coming soon
+                </div>
+              )
             ) : (
               <button
                 onClick={handleEnroll}

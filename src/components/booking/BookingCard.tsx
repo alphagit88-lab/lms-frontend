@@ -2,9 +2,9 @@
 
 import {
   Booking,
-  BookingStatus,
   getBookingStatusInfo,
 } from '@/lib/api/bookings';
+import Image from 'next/image';
 import { formatTimeRange, formatDate, calculateDuration } from '@/lib/api/availability';
 import BookingActions from './BookingActions';
 
@@ -51,7 +51,7 @@ export default function BookingCard({
 
   return (
     <div
-      className={`bg-white rounded-lg border p-4 sm:p-5 transition ${booking.status === 'pending'
+      className={`bg-white rounded-lg border p-4 sm:p-5 transition ${(booking.status === 'pending' || booking.status === 'pending_payment')
           ? 'border-amber-200 shadow-sm'
           : booking.status === 'confirmed' && isToday
             ? 'border-green-300 shadow-sm ring-1 ring-green-100'
@@ -63,12 +63,14 @@ export default function BookingCard({
         <div className="flex-1 min-w-0">
           {/* Student row */}
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center shrink-0">
               {booking.student?.profilePicture ? (
-                <img
+                <Image
                   src={booking.student.profilePicture}
                   alt={studentName}
-                  className="w-10 h-10 rounded-full object-cover"
+                  width={40}
+                  height={40}
+                  className="rounded-full object-cover"
                 />
               ) : (
                 initials
@@ -90,7 +92,7 @@ export default function BookingCard({
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
             {/* Date */}
             <div className="flex items-center gap-2 text-gray-600">
-              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <span>
@@ -105,7 +107,7 @@ export default function BookingCard({
 
             {/* Time */}
             <div className="flex items-center gap-2 text-gray-600">
-              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>
@@ -117,7 +119,7 @@ export default function BookingCard({
             {/* Amount */}
             {booking.amount != null && Number(booking.amount) > 0 && (
               <div className="flex items-center gap-2 text-gray-600">
-                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="font-medium text-green-700">LKR {Number(booking.amount).toLocaleString()}</span>
@@ -127,7 +129,7 @@ export default function BookingCard({
             {/* Meeting Link */}
             {booking.meetingLink && booking.status === 'confirmed' && (
               <div className="flex items-center gap-2 text-gray-600">
-                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
                 <a
@@ -150,6 +152,16 @@ export default function BookingCard({
             </div>
           )}
 
+          {/* Awaiting payment notice */}
+          {booking.status === 'pending_payment' && (
+            <div className="mt-3 bg-purple-50 rounded-md px-3 py-2 text-sm text-purple-700 flex items-center gap-2">
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Student has initiated payment — waiting for payment confirmation.
+            </div>
+          )}
+
           {/* Cancellation info */}
           {booking.status === 'cancelled' && booking.cancellationReason && (
             <div className="mt-3 bg-red-50 rounded-md px-3 py-2 text-sm text-red-700">
@@ -166,7 +178,7 @@ export default function BookingCard({
         </div>
 
         {/* Right: Actions */}
-        <div className="flex-shrink-0 sm:w-auto">
+        <div className="shrink-0 sm:w-auto">
           <BookingActions
             booking={booking}
             isPast={isPast}

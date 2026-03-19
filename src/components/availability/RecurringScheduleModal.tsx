@@ -28,8 +28,10 @@ export default function RecurringScheduleModal({
   const [dayOfWeek, setDayOfWeek] = useState('monday');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [price, setPrice] = useState('');
+  const [discountPercentage, setDiscountPercentage] = useState('');
   const [maxBookings, setMaxBookings] = useState('1');
   const [notes, setNotes] = useState('');
 
@@ -38,31 +40,21 @@ export default function RecurringScheduleModal({
   const [error, setError] = useState('');
   const [result, setResult] = useState<RecurringResponse | null>(null);
 
-  // Compute default min end date (1 week from today)
-  const today = new Date();
-  const minEndDate = today.toISOString().split('T')[0];
-  const defaultEndDate = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 28); // default 4 weeks
-    return d.toISOString().split('T')[0];
-  })();
-
-  // Estimate how many slots will be created
+  // Estimate how many slots will be created (uses startDate, allows past dates)
   const estimatedCount = (() => {
-    if (!recurrenceEndDate) return 0;
+    if (!recurrenceEndDate || !startDate) return 0;
     const end = new Date(recurrenceEndDate);
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    if (end < now) return 0;
+    const from = new Date(startDate);
+    from.setHours(0, 0, 0, 0);
+    if (end < from) return 0;
 
     const dayIndex = DAYS_OF_WEEK.findIndex((d) => d.value === dayOfWeek);
     const jsDayIndex = dayIndex === 6 ? 0 : dayIndex + 1;
 
-    const current = new Date(now);
+    const current = new Date(from);
     const currentJsDay = current.getDay();
     let daysUntil = jsDayIndex - currentJsDay;
     if (daysUntil < 0) daysUntil += 7;
-    if (daysUntil === 0) daysUntil = 7; // at least next occurrence for estimate
     current.setDate(current.getDate() + daysUntil);
 
     let count = 0;
@@ -77,8 +69,10 @@ export default function RecurringScheduleModal({
     setDayOfWeek('monday');
     setStartTime('09:00');
     setEndTime('10:00');
+    setStartDate(new Date().toISOString().split('T')[0]);
     setRecurrenceEndDate('');
     setPrice('');
+    setDiscountPercentage('');
     setMaxBookings('1');
     setNotes('');
     setError('');
@@ -108,12 +102,21 @@ export default function RecurringScheduleModal({
       setError('End time must be after start time');
       return;
     }
-    if (!recurrenceEndDate) {
-      setError('Recurrence end date is required');
+    if (!startDate) {
+      setError('Start date is required');
       return;
     }
-    if (new Date(recurrenceEndDate) < new Date(minEndDate)) {
-      setError('Recurrence end date must be in the future');
+    if (!recurrenceEndDate) {
+      setError('Repeat Until date is required');
+      return;
+    }
+    if (new Date(recurrenceEndDate) < new Date(startDate)) {
+      setError('Repeat Until must be on or after the Start From date');
+      return;
+    }
+
+    if (discountPercentage && (parseFloat(discountPercentage) < 0 || parseFloat(discountPercentage) > 100)) {
+      setError('Discount percentage must be between 0 and 100');
       return;
     }
 
@@ -123,8 +126,10 @@ export default function RecurringScheduleModal({
         dayOfWeek,
         startTime,
         endTime,
+        startDate,
         recurrenceEndDate,
         price: price ? parseFloat(price) : undefined,
+        discountPercentage: discountPercentage ? parseFloat(discountPercentage) : undefined,
         maxBookings: parseInt(maxBookings) || 1,
         notes: notes || undefined,
       };
@@ -277,6 +282,73 @@ export default function RecurringScheduleModal({
                   </div>
                 </div>
 
+                {/* Date Range */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Start From
+                    </label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => {
+                        setStartDate(e.target.value);
+                        // Clear end date if it's before new start date
+                        if (recurrenceEndDate && e.target.value > recurrenceEndDate) {
+                          setRecurrenceEndDate('');
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Repeat Until
+                    </label>
+                    <input
+                      type="date"
+                      value={recurrenceEndDate}
+                      onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                      min={startDate}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                    />
+                    {recurrenceEndDate && estimatedCount > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        ≈ <span className="font-medium text-gray-700">{estimatedCount}</span> slot{estimatedCount !== 1 ? 's' : ''} (every{' '}
+                        <span className="capitalize">{dayOfWeek}</span>)
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quick presets for end date */}
+                <div className="flex gap-2">
+                  {[
+                    { label: '4 weeks', weeks: 4 },
+                    { label: '8 weeks', weeks: 8 },
+                    { label: '12 weeks', weeks: 12 },
+                    { label: '6 months', weeks: 26 },
+                  ].map(({ label, weeks }) => {
+                    const base = startDate ? new Date(startDate) : new Date();
+                    base.setDate(base.getDate() + weeks * 7);
+                    const dateStr = base.toISOString().split('T')[0];
+                    return (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => setRecurrenceEndDate(dateStr)}
+                        className={`px-2.5 py-1 text-xs rounded-md border transition ${
+                          recurrenceEndDate === dateStr
+                            ? 'bg-black text-white border-black'
+                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 {/* Time Range */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -303,73 +375,48 @@ export default function RecurringScheduleModal({
                   </div>
                 </div>
 
-                {/* Recurrence End Date */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Repeat Until
-                  </label>
-                  <input
-                    type="date"
-                    value={recurrenceEndDate}
-                    onChange={(e) => setRecurrenceEndDate(e.target.value)}
-                    min={minEndDate}
-                    placeholder={defaultEndDate}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
-                  />
-                  {recurrenceEndDate && estimatedCount > 0 && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      ≈ <span className="font-medium text-gray-700">{estimatedCount}</span> slot{estimatedCount !== 1 ? 's' : ''} will be created (every{' '}
-                      <span className="capitalize">{dayOfWeek}</span>)
-                    </p>
-                  )}
-                </div>
 
-                {/* Quick presets for end date */}
-                <div className="flex gap-2">
-                  {[
-                    { label: '4 weeks', weeks: 4 },
-                    { label: '8 weeks', weeks: 8 },
-                    { label: '12 weeks', weeks: 12 },
-                    { label: '6 months', weeks: 26 },
-                  ].map(({ label, weeks }) => {
-                    const d = new Date();
-                    d.setDate(d.getDate() + weeks * 7);
-                    const dateStr = d.toISOString().split('T')[0];
-                    return (
-                      <button
-                        key={label}
-                        type="button"
-                        onClick={() => setRecurrenceEndDate(dateStr)}
-                        className={`px-2.5 py-1 text-xs rounded-md border transition ${
-                          recurrenceEndDate === dateStr
-                            ? 'bg-black text-white border-black'
-                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
 
-                {/* Price */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Price per slot (LKR)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 text-sm">
-                      LKR
-                    </span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      placeholder="0.00 (free)"
-                      className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
-                    />
+                {/* Price and Discount */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Regular Price (LKR)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 text-xs">
+                        LKR
+                      </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-emerald-700 mb-1">
+                      Discount Percentage (%)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-emerald-400 text-xs font-bold">
+                        %
+                      </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value={discountPercentage}
+                        onChange={(e) => setDiscountPercentage(e.target.value)}
+                        placeholder="0 - 100"
+                        className="w-full pl-8 pr-3 py-2 border border-emerald-100 bg-emerald-50/50 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none text-sm text-emerald-900 placeholder:text-emerald-300"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -406,33 +453,32 @@ export default function RecurringScheduleModal({
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none resize-none"
                   />
                 </div>
-              </form>
 
-              {/* Footer */}
-              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  disabled={loading}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  onClick={handleSubmit}
-                  disabled={loading || !recurrenceEndDate || estimatedCount === 0}
-                  className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition disabled:opacity-50 flex items-center gap-2"
-                >
-                  {loading && (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  )}
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Create {estimatedCount > 0 ? `${estimatedCount} Slots` : 'Recurring Slots'}
-                </button>
-              </div>
+                {/* Footer */}
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    disabled={loading}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || !recurrenceEndDate || estimatedCount === 0}
+                    className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {loading && (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    )}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Create {estimatedCount > 0 ? `${estimatedCount} Slots` : 'Recurring Slots'}
+                  </button>
+                </div>
+              </form>
             </>
           )}
         </div>
