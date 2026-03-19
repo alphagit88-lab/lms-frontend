@@ -10,6 +10,7 @@ import RecurringScheduleModal from '@/components/availability/RecurringScheduleM
 import {
   AvailabilitySlot,
   CreateSlotData,
+  UpdateSlotData,
   CreateRecurringData,
   RecurringResponse,
   getMySlots,
@@ -21,6 +22,10 @@ import {
   unblockSlot,
   cancelFutureRecurring,
   getWeekStart,
+  formatTimeRange,
+  formatDate,
+  getSlotStatusInfo,
+  calculateDuration,
 } from '@/lib/api/availability';
 import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
@@ -131,11 +136,8 @@ function InstructorAvailabilityContent() {
     await loadSlots();
   };
 
-  const handleUpdate = async (id: string, data: Partial<CreateSlotData & { status?: 'available' | 'booked' | 'blocked' }>) => {
-    await updateSlot(id, {
-      ...data,
-      status: data.status ?? undefined,
-    });
+  const handleUpdate = async (id: string, data: UpdateSlotData) => {
+    await updateSlot(id, data);
     await loadSlots();
   };
 

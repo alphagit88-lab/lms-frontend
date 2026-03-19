@@ -14,6 +14,7 @@ export interface AvailabilitySlot {
   maxBookings: number;
   currentBookings: number;
   price?: number;
+  discountPercentage?: number;
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -56,6 +57,7 @@ export interface UpdateSlotData {
   startTime?: string;
   endTime?: string;
   price?: number;
+  discountPercentage?: number | null;
   notes?: string;
   status?: 'available' | 'booked' | 'blocked';
 }

@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AvailabilitySlot, CreateSlotData, formatTimeRange, formatDate, getSlotStatusInfo, calculateDuration } from '@/lib/api/availability';
+import { AvailabilitySlot, CreateSlotData, UpdateSlotData, formatTimeRange, formatDate, getSlotStatusInfo, calculateDuration } from '@/lib/api/availability';
 
 interface SlotModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: CreateSlotData) => Promise<void>;
-  onUpdate: (id: string, data: Partial<CreateSlotData & { status?: 'available' | 'booked' | 'blocked' }>) => Promise<void>;
+  onUpdate: (id: string, data: UpdateSlotData) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onBlock: (id: string) => Promise<void>;
   onUnblock: (id: string) => Promise<void>;
