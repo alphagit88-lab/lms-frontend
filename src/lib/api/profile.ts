@@ -89,6 +89,8 @@ export interface TeacherProfile {
   autoConfirmBookings: boolean;
   rating?: number;
   ratingCount: number;
+  packageDiscount3Plus: number;
+  packageDiscount5Plus: number;
   verified: boolean;
   verifiedAt?: string;
   totalSessions: number;
@@ -106,6 +108,8 @@ export interface UpdateTeacherProfileData {
   subjects?: string;
   availabilityTimezone?: string;
   autoConfirmBookings?: boolean;
+  packageDiscount3Plus?: number;
+  packageDiscount5Plus?: number;
 }
 
 export async function getMyTeacherProfile(): Promise<TeacherProfile | null> {

@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AvailabilitySlot, CreateSlotData, formatTimeRange, formatDate, getSlotStatusInfo, calculateDuration } from '@/lib/api/availability';
+import { AvailabilitySlot, CreateSlotData, UpdateSlotData, formatTimeRange, formatDate, getSlotStatusInfo, calculateDuration } from '@/lib/api/availability';
 
 interface SlotModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: CreateSlotData) => Promise<void>;
-  onUpdate: (id: string, data: Partial<CreateSlotData & { status?: 'available' | 'booked' | 'blocked' }>) => Promise<void>;
+  onUpdate: (id: string, data: UpdateSlotData) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onBlock: (id: string) => Promise<void>;
   onUnblock: (id: string) => Promise<void>;
@@ -37,6 +37,7 @@ export default function SlotModal({
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [price, setPrice] = useState('');
+  const [discountPercentage, setDiscountPercentage] = useState('');
   const [maxBookings, setMaxBookings] = useState('1');
   const [notes, setNotes] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
@@ -63,6 +64,7 @@ export default function SlotModal({
       setStartTime(`${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`);
       setEndTime(`${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`);
       setPrice(slot.price != null ? String(slot.price) : '');
+      setDiscountPercentage(slot.discountPercentage != null ? String(slot.discountPercentage) : '');
       setMaxBookings(String(slot.maxBookings));
       setNotes(slot.notes || '');
       setIsRecurring(!!slot.isRecurring);
@@ -92,6 +94,7 @@ export default function SlotModal({
         setEndTime('10:00');
       }
       setPrice('');
+      setDiscountPercentage('');
       setMaxBookings('1');
       setNotes('');
       setIsRecurring(false);
@@ -133,6 +136,11 @@ export default function SlotModal({
       return;
     }
 
+    if (discountPercentage && (parseFloat(discountPercentage) < 0 || parseFloat(discountPercentage) > 100)) {
+      setError('Discount percentage must be between 0 and 100');
+      return;
+    }
+
     setSaving(true);
     try {
       if (isEdit && slot) {
@@ -140,6 +148,7 @@ export default function SlotModal({
           startTime: startDateTime.toISOString(),
           endTime: endDateTime.toISOString(),
           price: price ? parseFloat(price) : undefined,
+          discountPercentage: discountPercentage ? parseFloat(discountPercentage) : null,
           maxBookings: parseInt(maxBookings) || 1,
           notes: notes || undefined,
           isRecurring,
@@ -150,6 +159,7 @@ export default function SlotModal({
           startTime: startDateTime.toISOString(),
           endTime: endDateTime.toISOString(),
           price: price ? parseFloat(price) : undefined,
+          discountPercentage: discountPercentage ? parseFloat(discountPercentage) : undefined,
           maxBookings: parseInt(maxBookings) || 1,
           notes: notes || undefined,
           isRecurring,
@@ -408,6 +418,16 @@ export default function SlotModal({
                     </div>
                   )}
                   {slot.price != null && Number(slot.price) > 0 && (
+                    <div className="text-gray-500 line-through text-xs italic">
+                      LKR {Number(slot.price).toLocaleString()}
+                    </div>
+                  )}
+                  {slot.discountPercentage != null && Number(slot.discountPercentage) > 0 && (
+                    <div className="text-green-700 font-bold text-xs">
+                      PROMO: LKR {(Number(slot.price) * (1 - Number(slot.discountPercentage) / 100)).toLocaleString()} ({slot.discountPercentage}%)
+                    </div>
+                  )}
+                  {slot.price != null && Number(slot.price) > 0 && !slot.discountPercentage && (
                     <div className="text-green-700 font-medium text-xs">
                       LKR {Number(slot.price).toLocaleString()}
                     </div>
@@ -475,25 +495,48 @@ export default function SlotModal({
               </p>
             )}
 
-            {/* Price */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Price (LKR)
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 text-sm">
-                  LKR
-                </span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="0.00 (free)"
-                  disabled={isBlocked}
-                  className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none disabled:bg-gray-100 disabled:text-gray-500"
-                />
+            {/* Price and Discount */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Regular Price (LKR)
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 text-xs">
+                    LKR
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="0.00"
+                    disabled={isBlocked}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none disabled:bg-gray-100 disabled:text-gray-500 text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-emerald-700 mb-1">
+                  Discount Percentage (%)
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-emerald-400 text-xs font-bold">
+                    %
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={discountPercentage}
+                    onChange={(e) => setDiscountPercentage(e.target.value)}
+                    placeholder="0 - 100"
+                    disabled={isBlocked}
+                    className="w-full pl-8 pr-3 py-2 border border-emerald-100 bg-emerald-50/50 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:text-gray-500 text-sm text-emerald-900 placeholder:text-emerald-300"
+                  />
+                </div>
               </div>
             </div>
 

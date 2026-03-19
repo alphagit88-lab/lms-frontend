@@ -31,6 +31,7 @@ export default function RecurringScheduleModal({
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [price, setPrice] = useState('');
+  const [discountPercentage, setDiscountPercentage] = useState('');
   const [maxBookings, setMaxBookings] = useState('1');
   const [notes, setNotes] = useState('');
 
@@ -71,6 +72,7 @@ export default function RecurringScheduleModal({
     setStartDate(new Date().toISOString().split('T')[0]);
     setRecurrenceEndDate('');
     setPrice('');
+    setDiscountPercentage('');
     setMaxBookings('1');
     setNotes('');
     setError('');
@@ -113,6 +115,11 @@ export default function RecurringScheduleModal({
       return;
     }
 
+    if (discountPercentage && (parseFloat(discountPercentage) < 0 || parseFloat(discountPercentage) > 100)) {
+      setError('Discount percentage must be between 0 and 100');
+      return;
+    }
+
     setLoading(true);
     try {
       const data: CreateRecurringData = {
@@ -122,6 +129,7 @@ export default function RecurringScheduleModal({
         startDate,
         recurrenceEndDate,
         price: price ? parseFloat(price) : undefined,
+        discountPercentage: discountPercentage ? parseFloat(discountPercentage) : undefined,
         maxBookings: parseInt(maxBookings) || 1,
         notes: notes || undefined,
       };
@@ -369,24 +377,46 @@ export default function RecurringScheduleModal({
 
 
 
-                {/* Price */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Price per slot (LKR)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 text-sm">
-                      LKR
-                    </span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      placeholder="0.00 (free)"
-                      className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
-                    />
+                {/* Price and Discount */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Regular Price (LKR)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 text-xs">
+                        LKR
+                      </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-emerald-700 mb-1">
+                      Discount Percentage (%)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-emerald-400 text-xs font-bold">
+                        %
+                      </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value={discountPercentage}
+                        onChange={(e) => setDiscountPercentage(e.target.value)}
+                        placeholder="0 - 100"
+                        className="w-full pl-8 pr-3 py-2 border border-emerald-100 bg-emerald-50/50 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none text-sm text-emerald-900 placeholder:text-emerald-300"
+                      />
+                    </div>
                   </div>
                 </div>
 

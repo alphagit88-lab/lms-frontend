@@ -212,7 +212,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               <StatCard icon={icons.users} label="Reach" value="142 Students" sub="Active learners" accent="bg-white text-blue-600" />
               <StatCard icon={icons.calendar} label="Pipeline" value="8 Bookings" sub="Next 7 days" accent="bg-white text-indigo-600" />
-              <StatCard icon={icons.wallet} label="Yield" value="$4,280" sub="Earnings this month" accent="bg-white text-emerald-600" />
+              <StatCard icon={icons.wallet} label="Yield" value="LKR 428,000" sub="Earnings this month" accent="bg-white text-emerald-600" />
               <StatCard icon={icons.chart} label="Trust" value="4.9/5" sub="Average rating" accent="bg-white text-amber-600" />
             </div>
 

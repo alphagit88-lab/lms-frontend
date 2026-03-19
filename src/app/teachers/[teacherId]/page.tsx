@@ -22,6 +22,7 @@ import AvailabilityCalendar from '@/components/booking/AvailabilityCalendar';
 import BookingConfirmDialog from '@/components/booking/BookingConfirmDialog';
 import BookingSuccess from '@/components/booking/BookingSuccess';
 import PackageBookingModal from '@/components/booking/PackageBookingModal';
+import { useCart } from '@/contexts/CartContext';
 
 export default function TeacherProfilePage() {
   const params = useParams();
@@ -42,8 +43,8 @@ export default function TeacherProfilePage() {
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Package booking flow state
-  const [selectedSlots, setSelectedSlots] = useState<AvailabilitySlot[]>([]);
+  // Package booking flow state (Now uses global CartContext)
+  const { cartItems, addToCart, removeFromCart, clearCart, isInCart } = useCart();
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [packageSuccess, setPackageSuccess] = useState<CreatePackageBookingResponse | null>(null);
 
@@ -52,6 +53,8 @@ export default function TeacherProfilePage() {
 
   // Similar teachers
   const [similarTeachers, setSimilarTeachers] = useState<TeacherProfile[]>([]);
+
+  const name = profile ? getTeacherDisplayName(profile) : 'Teacher';
 
   useEffect(() => {
     async function loadProfile() {
@@ -74,20 +77,11 @@ export default function TeacherProfilePage() {
   // Handle slot click based on booking mode
   const handleSlotSelect = useCallback((slot: AvailabilitySlot) => {
     if (bookingMode === 'package') {
-      setSelectedSlots((prev) => {
-        const exists = prev.find((s) => s.id === slot.id);
-        if (exists) {
-          // Deselect
-          return prev.filter((s) => s.id !== slot.id);
-        }
-        // Add to selection (max 20)
-        if (prev.length >= 20) return prev;
-        return [...prev, slot];
-      });
+      addToCart(slot, name);
     } else {
       setSelectedSlot(slot);
     }
-  }, [bookingMode]);
+  }, [bookingMode, addToCart, name]);
 
   // Single booking handlers
   const handleBookSlot = useCallback(() => {
@@ -136,19 +130,22 @@ export default function TeacherProfilePage() {
   }, [user, router, teacherId]);
 
   const handleRemoveSlotFromPackage = useCallback((slotId: string) => {
-    setSelectedSlots((prev) => prev.filter((s) => s.id !== slotId));
-  }, []);
+    removeFromCart(slotId);
+  }, [removeFromCart]);
 
   const handlePackageSuccess = useCallback((response: CreatePackageBookingResponse) => {
     setPackageSuccess(response);
     setShowPackageModal(false);
-    setSelectedSlots([]);
+    clearCart();
     setCalendarKey((prev) => prev + 1);
 
     // Paid package → go straight to checkout; student must pay before teacher sees it
+    // Paid package → go straight to checkout
     if (response.package.finalPrice && Number(response.package.finalPrice) > 0) {
+      // For multi-instructor packages, teacherId from package might be null/first instructor
+      const recipientId = response.package.teacherId || response.bookings[0]?.teacherId;
       router.push(
-        `/payments/checkout?type=booking_package&referenceId=${response.package.id}&amount=${response.package.finalPrice}&recipientId=${response.package.teacherId}`
+        `/payments/checkout?type=booking_package&referenceId=${response.package.id}&amount=${response.package.finalPrice}&recipientId=${recipientId}`
       );
     }
   }, [router]);
@@ -161,8 +158,8 @@ export default function TeacherProfilePage() {
   const handleModeToggle = useCallback((mode: 'single' | 'package') => {
     setBookingMode(mode);
     setSelectedSlot(null);
-    setSelectedSlots([]);
-  }, []);
+    if (mode === 'single') clearCart();
+  }, [clearCart]);
 
   const handleViewBookings = useCallback(() => {
     router.push('/bookings');
@@ -213,7 +210,7 @@ export default function TeacherProfilePage() {
     );
   }
 
-  const name = getTeacherDisplayName(profile);
+  // const name = getTeacherDisplayName(profile);
   const subjects = parseSubjects(profile.subjects);
   const languages = parseLanguages(profile.teachingLanguages);
   const ratingDisplay = formatRating(profile.rating ? Number(profile.rating) : undefined);
@@ -392,7 +389,7 @@ export default function TeacherProfilePage() {
                 <div>
                   <p className="font-medium">Select multiple slots to book as a package</p>
                   <p className="text-xs text-blue-600 mt-0.5">
-                    Click on available slots to select/deselect. 3+ sessions = 5% off, 5+ sessions = 10% off.
+                    Click on available slots to select/deselect. 3+ sessions = {profile.packageDiscount3Plus ?? 5}% off, 5+ sessions = {profile.packageDiscount5Plus ?? 10}% off.
                   </p>
                 </div>
               </div>
@@ -402,7 +399,7 @@ export default function TeacherProfilePage() {
               key={calendarKey}
               teacherId={teacherId}
               onSlotSelect={handleSlotSelect}
-              selectedSlotIds={bookingMode === 'package' ? selectedSlots.map((s) => s.id) : undefined}
+              selectedSlotIds={bookingMode === 'package' ? cartItems.map((s) => s.id) : undefined}
               multiSelectMode={bookingMode === 'package'}
             />
 
@@ -428,14 +425,22 @@ export default function TeacherProfilePage() {
                         {formatTimeRange(selectedSlot.startTime, selectedSlot.endTime)}
                         <span className="text-gray-400">({calculateDuration(selectedSlot.startTime, selectedSlot.endTime)} min)</span>
                       </div>
-                      {selectedSlot.price != null && Number(selectedSlot.price) > 0 && (
+                      {(selectedSlot.discountPercentage != null || selectedSlot.price != null) && (
                         <div className="flex items-center gap-2">
                           <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span className="font-medium text-green-700">
-                            LKR {Number(selectedSlot.price).toLocaleString()}
-                          </span>
+                          {selectedSlot.discountPercentage != null && Number(selectedSlot.discountPercentage) > 0 ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-400 line-through">LKR {Number(selectedSlot.price).toLocaleString()}</span>
+                              <span className="font-bold text-green-700">LKR {(Number(selectedSlot.price) * (1 - Number(selectedSlot.discountPercentage) / 100)).toLocaleString()}</span>
+                              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold uppercase">{selectedSlot.discountPercentage}% OFF</span>
+                            </div>
+                          ) : (
+                            <span className="font-medium text-green-700">
+                              {Number(selectedSlot.price) > 0 ? `LKR ${Number(selectedSlot.price).toLocaleString()}` : 'Free'}
+                            </span>
+                          )}
                         </div>
                       )}
                       {selectedSlot.maxBookings > 1 && (
@@ -485,21 +490,28 @@ export default function TeacherProfilePage() {
             )}
 
             {/* ── Package mode: Selection Summary Bar ── */}
-            {bookingMode === 'package' && selectedSlots.length > 0 && (
+            {bookingMode === 'package' && cartItems.length > 0 && (
               <div className="mt-4 bg-white rounded-lg border-2 border-blue-300 p-4 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="font-semibold text-gray-900">
-                      {selectedSlots.length} session{selectedSlots.length !== 1 ? 's' : ''} selected
+                      {cartItems.length} session{cartItems.length !== 1 ? 's' : ''} selected
                     </h3>
                     <div className="text-sm text-gray-500 mt-0.5">
                       {(() => {
-                        const total = selectedSlots.reduce((sum, s) => sum + (s.price ? Number(s.price) : 0), 0);
-                        const discount = selectedSlots.length >= 5 ? 10 : selectedSlots.length >= 3 ? 5 : 0;
-                        const final_ = Math.round(total * (1 - discount / 100) * 100) / 100;
+                        const total_raw = cartItems.reduce((sum, s) => {
+                          const eff = s.discountPercentage != null && Number(s.discountPercentage) > 0 
+                            ? Number(s.price) * (1 - Number(s.discountPercentage) / 100) 
+                            : (s.price ? Number(s.price) : 0);
+                          return sum + eff;
+                        }, 0);
+                        const d3 = profile.packageDiscount3Plus ?? 5;
+                        const d5 = profile.packageDiscount5Plus ?? 10;
+                        const discount = cartItems.length >= 5 ? d5 : cartItems.length >= 3 ? d3 : 0;
+                        const final_ = Math.round(total_raw * (1 - discount / 100) * 100) / 100;
                         return (
                           <>
-                            Total: <span className={discount > 0 ? 'line-through text-gray-400' : 'font-medium text-green-700'}>LKR {total.toLocaleString()}</span>
+                            Total: <span className={discount > 0 ? 'line-through text-gray-400' : 'font-medium text-green-700'}>LKR {total_raw.toLocaleString()}</span>
                             {discount > 0 && (
                               <>
                                 {' → '}
@@ -515,14 +527,14 @@ export default function TeacherProfilePage() {
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setSelectedSlots([])}
+                      onClick={clearCart}
                       className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
                     >
                       Clear All
                     </button>
                     <button
                       onClick={handleOpenPackageModal}
-                      disabled={selectedSlots.length < 2}
+                      disabled={cartItems.length < 2}
                       className="px-5 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition disabled:opacity-50 flex items-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -533,9 +545,14 @@ export default function TeacherProfilePage() {
                   </div>
                 </div>
 
-                {selectedSlots.length < 2 && (
+                {cartItems.length < 2 && (
                   <p className="text-xs text-amber-600 mt-2">
                     Select at least 2 sessions to create a package booking.
+                  </p>
+                )}
+                {cartItems.length > 0 && Array.from(new Set(cartItems.map(i => i.teacherId))).length > 1 && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Multi-instructor package selected! Sessions from different teachers will be combined.
                   </p>
                 )}
               </div>
@@ -636,8 +653,10 @@ export default function TeacherProfilePage() {
       {showPackageModal && (
         <PackageBookingModal
           isOpen={showPackageModal}
-          slots={selectedSlots}
-          teacherName={name}
+          slots={cartItems}
+          teacherName={cartItems.length > 0 && Array.from(new Set(cartItems.map(i => i.teacherId))).length === 1 ? name : 'Multi-Instructor'}
+          packageDiscount3Plus={profile.packageDiscount3Plus}
+          packageDiscount5Plus={profile.packageDiscount5Plus}
           onClose={() => setShowPackageModal(false)}
           onSuccess={handlePackageSuccess}
           onRemoveSlot={handleRemoveSlotFromPackage}

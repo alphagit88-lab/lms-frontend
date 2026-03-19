@@ -6,8 +6,10 @@ import { createPackageBooking, CreatePackageBookingResponse } from '@/lib/api/bo
 
 interface PackageBookingModalProps {
   isOpen: boolean;
-  slots: AvailabilitySlot[];
+  slots: (AvailabilitySlot & { teacherName?: string })[];
   teacherName: string;
+  packageDiscount3Plus?: number;
+  packageDiscount5Plus?: number;
   onClose: () => void;
   onSuccess: (response: CreatePackageBookingResponse) => void;
   onRemoveSlot: (slotId: string) => void;
@@ -17,6 +19,8 @@ export default function PackageBookingModal({
   isOpen,
   slots,
   teacherName,
+  packageDiscount3Plus = 5,
+  packageDiscount5Plus = 10,
   onClose,
   onSuccess,
   onRemoveSlot,
@@ -29,8 +33,14 @@ export default function PackageBookingModal({
   if (!isOpen || slots.length === 0) return null;
 
   // Price calculations
-  const totalPrice = slots.reduce((sum, s) => sum + (s.price ? Number(s.price) : 0), 0);
-  const discountPercentage = slots.length >= 5 ? 10 : slots.length >= 3 ? 5 : 0;
+  const totalPrice = slots.reduce((sum, s) => {
+    const effectivePrice = s.discountPercentage != null && Number(s.discountPercentage) > 0 
+      ? Number(s.price) * (1 - Number(s.discountPercentage) / 100) 
+      : (s.price ? Number(s.price) : 0);
+    return sum + effectivePrice;
+  }, 0);
+
+  const discountPercentage = slots.length >= 5 ? packageDiscount5Plus : slots.length >= 3 ? packageDiscount3Plus : 0;
   const finalPrice = Math.round(totalPrice * (1 - discountPercentage / 100) * 100) / 100;
   const savedAmount = Math.round((totalPrice - finalPrice) * 100) / 100;
 
@@ -127,8 +137,8 @@ export default function PackageBookingModal({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>
-                  Add {3 - slots.length} more session{3 - slots.length !== 1 ? 's' : ''} to get a <strong>5% discount</strong>!
-                  Book 5+ sessions for <strong>10% off</strong>.
+                  Add {3 - slots.length} more session{3 - slots.length !== 1 ? 's' : ''} to get a <strong>{packageDiscount3Plus}% discount</strong>!
+                  Book 5+ sessions for <strong>{packageDiscount5Plus}% off</strong>.
                 </span>
               </div>
             )}
@@ -172,15 +182,28 @@ export default function PackageBookingModal({
                           </div>
                           <div className="text-xs text-gray-500">
                             {formatTimeRange(slot.startTime, slot.endTime)}
+                            {slot.teacherName && (
+                              <span className="text-blue-600 font-medium ml-1">
+                                • {slot.teacherName}
+                              </span>
+                            )}
                             <span className="text-gray-400 ml-1">({duration} min)</span>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-green-700">
-                          {slot.price != null && Number(slot.price) > 0
-                            ? `LKR ${Number(slot.price).toLocaleString()}`
-                            : 'Free'}
+                          {slot.discountPercentage != null && Number(slot.discountPercentage) > 0 ? (
+                            <div className="flex flex-col items-end">
+                              <span className="text-[10px] text-gray-400 line-through">LKR {Number(slot.price).toLocaleString()}</span>
+                              <span>LKR {(Number(slot.price) * (1 - Number(slot.discountPercentage) / 100)).toLocaleString()}</span>
+                              <span className="text-[10px] text-emerald-600 font-bold">{slot.discountPercentage}% OFF</span>
+                            </div>
+                          ) : slot.price != null && Number(slot.price) > 0 ? (
+                            `LKR ${Number(slot.price).toLocaleString()}`
+                          ) : (
+                            'Free'
+                          )}
                         </span>
                         <button
                           onClick={() => onRemoveSlot(slot.id)}

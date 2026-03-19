@@ -8,10 +8,13 @@ import {
   deleteContent,
   Content,
   ContentType,
-  ContentFilters,
+  AcademicResourceType, // Added AcademicResourceType
+  ContentFilters, // Retained ContentFilters
   formatFileSize,
   getContentTypeIcon,
   getContentTypeLabel,
+  getAcademicResourceTypeLabel,
+  ACADEMIC_RESOURCE_TYPES,
 } from '@/lib/api/content';
 import AppLayout from '@/components/layout/AppLayout';
 
@@ -22,6 +25,7 @@ export default function InstructorContentPage() {
   const [error, setError] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedType, setSelectedType] = useState<ContentType | ''>('');
+  const [selectedAcademicType, setSelectedAcademicType] = useState<AcademicResourceType | ''>('');
   const [selectedPaid, setSelectedPaid] = useState<'all' | 'paid' | 'free'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -35,12 +39,8 @@ export default function InstructorContentPage() {
   const fetchContent = useCallback(async () => {
     try {
       setLoading(true);
-      const filters: ContentFilters = {};
-      if (selectedType) filters.contentType = selectedType;
-      if (selectedPaid === 'paid') filters.isPaid = true;
-      if (selectedPaid === 'free') filters.isPaid = false;
-
-      const data = await getAllContent(filters);
+      // Fetch all content, client-side filtering will be applied by filteredContents
+      const data = await getAllContent({});
       setContents(data);
       setError('');
     } catch (err) {
@@ -49,7 +49,7 @@ export default function InstructorContentPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedType, selectedPaid]);
+  }, []); // No dependencies, fetch all content once
 
   useEffect(() => {
     fetchContent();
@@ -70,14 +70,31 @@ export default function InstructorContentPage() {
     }
   };
 
-  const filteredContents = searchQuery
-    ? contents.filter(
-      (c) =>
-        c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    : contents;
+  const filteredContents = contents.filter((content) => {
+    // Type filter
+    if (selectedType && content.contentType !== selectedType) return false;
+
+    // Academic type filter
+    if (selectedAcademicType && content.resourceType !== selectedAcademicType) return false;
+
+    // Paid filter
+    if (selectedPaid === 'paid' && !content.isPaid) return false;
+    if (selectedPaid === 'free' && content.isPaid) return false;
+
+    // Search filter
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      return (
+        content.title.toLowerCase().includes(searchLower) ||
+        content.description?.toLowerCase().includes(searchLower) ||
+        content.subject?.toLowerCase().includes(searchLower) ||
+        content.grade?.toLowerCase().includes(searchLower) ||
+        content.topic?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return true; // If no filters apply, include the content
+  });
 
   return (
     <AppLayout>
@@ -152,13 +169,27 @@ export default function InstructorContentPage() {
                 />
               </div>
 
-              {/* Content Type Filter */}
+              {/* Academic Resource Type Filter */}
+              <select
+                value={selectedAcademicType}
+                onChange={(e) => setSelectedAcademicType(e.target.value as AcademicResourceType | '')}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Categories</option>
+                {ACADEMIC_RESOURCE_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {getAcademicResourceTypeLabel(type)}
+                  </option>
+                ))}
+              </select>
+
+              {/* Content Format Filter */}
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value as ContentType | '')}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">All Types</option>
+                <option value="">All Formats</option>
                 {Object.values(ContentType).map((type) => (
                   <option key={type} value={type}>
                     {getContentTypeLabel(type)}
@@ -256,6 +287,9 @@ export default function InstructorContentPage() {
 
                     {/* Meta Info */}
                     <div className="flex flex-wrap gap-2 mb-4">
+                      <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded font-medium">
+                        {getAcademicResourceTypeLabel(content.resourceType)}
+                      </span>
                       <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
                         {getContentTypeLabel(content.contentType)}
                       </span>
@@ -278,13 +312,12 @@ export default function InstructorContentPage() {
                       </span>
                     </div>
 
-                    {/* Subject & Grade */}
-                    {(content.subject || content.grade) && (
-                      <div className="flex gap-2 mb-4 text-sm text-gray-600">
-                        {content.subject && <span>📚 {content.subject}</span>}
-                        {content.grade && <span>🎓 {content.grade}</span>}
-                      </div>
-                    )}
+                    {/* Subject, Grade & Topic */}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4 text-xs text-gray-600">
+                      {content.subject && <span className="flex items-center">📚 <span className="ml-1">{content.subject}</span></span>}
+                      {content.grade && <span className="flex items-center">🎓 <span className="ml-1">{content.grade}</span></span>}
+                      {content.topic && <span className="flex items-center">🔖 <span className="ml-1">{content.topic}</span></span>}
+                    </div>
 
                     {/* Stats */}
                     <div className="flex justify-between text-sm text-gray-600 mb-4">
@@ -354,11 +387,13 @@ function UploadModal({
     title: '',
     description: '',
     contentType: ContentType.PDF,
+    resourceType: AcademicResourceType.OTHER,
     language: 'English',
     isPaid: false,
     price: '',
     subject: '',
     grade: '',
+    topic: '',
     isDownloadable: true,
     isPublished: false,
     thumbnailUrl: '',
@@ -432,11 +467,13 @@ function UploadModal({
         title: formData.title,
         description: formData.description || undefined,
         contentType: formData.contentType,
+        resourceType: formData.resourceType,
         language: formData.language,
         isPaid: formData.isPaid,
         price: formData.isPaid ? parseFloat(formData.price) : undefined,
         subject: formData.subject || undefined,
         grade: formData.grade || undefined,
+        topic: formData.topic || undefined,
         isDownloadable: formData.isDownloadable,
         isPublished: formData.isPublished,
         thumbnailUrl: formData.thumbnailUrl || undefined,
@@ -572,22 +609,22 @@ function UploadModal({
             </p>
           </div>
 
-          {/* Content Type & Language */}
+          {/* Academic Resource Type & Language */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Content Type *
+                Resource Type *
               </label>
               <select
-                value={formData.contentType}
+                value={formData.resourceType}
                 onChange={(e) =>
-                  setFormData({ ...formData, contentType: e.target.value as ContentType })
+                  setFormData({ ...formData, resourceType: e.target.value as AcademicResourceType })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                {Object.values(ContentType).map((type) => (
+                {Object.values(AcademicResourceType).map((type) => (
                   <option key={type} value={type}>
-                    {getContentTypeLabel(type)}
+                    {getAcademicResourceTypeLabel(type)}
                   </option>
                 ))}
               </select>
@@ -609,8 +646,29 @@ function UploadModal({
             </div>
           </div>
 
-          {/* Subject & Grade */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Content Format (File Type) *
+              </label>
+              <select
+                value={formData.contentType}
+                onChange={(e) =>
+                  setFormData({ ...formData, contentType: e.target.value as ContentType })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {Object.values(ContentType).map((type) => (
+                  <option key={type} value={type}>
+                    {getContentTypeLabel(type)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Subject, Grade & Topic */}
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Subject
@@ -621,7 +679,7 @@ function UploadModal({
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                 maxLength={100}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., Mathematics"
+                placeholder="Mathematics"
               />
             </div>
 
@@ -635,7 +693,21 @@ function UploadModal({
                 onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
                 maxLength={50}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., Grade 10"
+                placeholder="A/L"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Topic
+              </label>
+              <input
+                type="text"
+                value={formData.topic}
+                onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+                maxLength={100}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Algebra"
               />
             </div>
           </div>

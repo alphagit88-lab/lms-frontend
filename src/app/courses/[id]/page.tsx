@@ -47,10 +47,13 @@ export default function CourseDetailPage() {
 
     setEnrolling(true);
     // Push to the new checkout system
+    const basePrice = course?.price || 0;
+    const discountPercent = course?.discountPercentage || 0;
+    const effectivePrice = Math.round(basePrice * (1 - discountPercent / 100) * 100) / 100;
     const checkoutUrl = new URL(window.location.origin + '/checkout');
     checkoutUrl.searchParams.append('type', 'course_enrollment');
     checkoutUrl.searchParams.append('referenceId', courseId);
-    checkoutUrl.searchParams.append('price', course?.price?.toString() || "0");
+    checkoutUrl.searchParams.append('price', effectivePrice.toString());
     checkoutUrl.searchParams.append('title', course?.title || "");
     if (course?.instructorId) checkoutUrl.searchParams.append('recipientId', course.instructorId);
 
@@ -59,7 +62,7 @@ export default function CourseDetailPage() {
 
   const formatPrice = (price: number | string | undefined) => {
     const numPrice = Number(price || 0);
-    return numPrice === 0 ? 'Free' : `$${numPrice.toFixed(2)}`;
+    return numPrice === 0 ? 'Free' : `LKR ${numPrice.toLocaleString()}`;
   };
 
   const getLevelBadgeColor = (level: string) => {
@@ -300,7 +303,25 @@ export default function CourseDetailPage() {
               </div>
             )}
 
-            <div className="text-3xl font-bold text-slate-900 mb-5">{formatPrice(course.price)}</div>
+            <div className="mb-5">
+              {course.discountPercentage != null && Number(course.discountPercentage) > 0 ? (
+                <div className="flex flex-col">
+                  <span className="text-sm text-slate-400 line-through decoration-red-400">
+                    {formatPrice(course.price)}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl font-bold text-emerald-600">
+                      {formatPrice(Math.round(Number(course.price) * (1 - Number(course.discountPercentage) / 100) * 100) / 100)}
+                    </span>
+                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-lg uppercase tracking-wider">
+                      {course.discountPercentage}% OFF
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-3xl font-bold text-slate-900">{formatPrice(course.price)}</div>
+              )}
+            </div>
 
             {isInstructor ? (
               <Link
