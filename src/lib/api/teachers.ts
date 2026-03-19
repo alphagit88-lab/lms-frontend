@@ -25,6 +25,8 @@ export interface TeacherProfile {
   hourlyRate?: number;
   teachingLanguages?: string;
   subjects?: string;
+  packageDiscount3Plus?: number;
+  packageDiscount5Plus?: number;
   autoConfirmBookings: boolean;
   totalSessions: number;
   totalStudents: number;
@@ -104,6 +106,8 @@ export async function updateTeacherProfile(data: {
   subjects?: string;
   availabilityTimezone?: string;
   autoConfirmBookings?: boolean;
+  packageDiscount3Plus?: number;
+  packageDiscount5Plus?: number;
 }): Promise<{ message: string; profile: TeacherProfile }> {
   return apiFetch('/api/profiles/teacher', {
     method: 'PUT',

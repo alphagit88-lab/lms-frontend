@@ -47,6 +47,7 @@ function EditCourseContent() {
     categoryId: '',
     level: 'beginner',
     price: 0,
+    discountPercentage: null,
     thumbnail: '',
     previewVideoUrl: '',
     medium: 'english',
@@ -78,6 +79,7 @@ function EditCourseContent() {
         categoryId: data.category?.id || '',
         level: data.level || 'beginner',
         price: data.price || 0,
+        discountPercentage: data.discountPercentage !== undefined ? data.discountPercentage : null,
         thumbnail: normalizeUrl(data.thumbnail),
         previewVideoUrl: normalizeUrl(data.previewVideoUrl),
         medium: data.medium || 'english',
@@ -108,7 +110,9 @@ function EditCourseContent() {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'price' ? parseFloat(value) || 0 : value,
+      [name]: (name === 'price' || name === 'discountPercentage') 
+        ? (value === '' ? (name === 'discountPercentage' ? null : 0) : parseFloat(value)) 
+        : value,
     }));
   };
 
@@ -164,6 +168,13 @@ function EditCourseContent() {
     if (formData.title.length > 200) { setError('Title must be less than 200 characters'); return; }
     if (!formData.description?.trim()) { setError('Description is required'); return; }
     if (formData.description.length > 5000) { setError('Description must be less than 5000 characters'); return; }
+    
+    if (formData.discountPercentage !== null && formData.discountPercentage !== undefined) {
+      if (Number(formData.discountPercentage) < 0 || Number(formData.discountPercentage) > 100) {
+        setError('Discount percentage must be between 0 and 100');
+        return;
+      }
+    }
 
     try {
       setSaving(true);
@@ -319,8 +330,15 @@ function EditCourseContent() {
               <div className="text-xs text-slate-500">Lessons</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-slate-900">${course?.price ? Number(course.price).toFixed(2) : '0.00'}</div>
-              <div className="text-xs text-slate-500">Price</div>
+              <div className="text-2xl font-bold text-slate-900">
+                {formData.discountPercentage != null && Number(formData.discountPercentage) > 0
+                  ? (Number(formData.price) * (1 - Number(formData.discountPercentage) / 100)).toFixed(2)
+                  : (formData.price ? Number(formData.price).toFixed(2) : '0.00')}
+                <span className="text-sm font-normal ml-1">LKR</span>
+              </div>
+              <div className="text-xs text-slate-500">
+                {formData.discountPercentage != null && Number(formData.discountPercentage) > 0 ? 'Discounted Price' : 'Regular Price'}
+              </div>
             </div>
           </div>
         </div>
@@ -386,12 +404,24 @@ function EditCourseContent() {
             </div>
           </div>
 
-          <div>
-            <label htmlFor="price" className="block text-sm font-medium text-slate-700 mb-1.5">
-              Price (USD) <span className="text-red-500">*</span>
-            </label>
-            <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} min="0" step="0.01" required className={inputClasses} />
-            <p className="mt-1 text-xs text-slate-400">Set to 0 for free courses</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label htmlFor="price" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Regular Price (LKR) <span className="text-red-500">*</span>
+              </label>
+              <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} min="0" step="0.01" required className={inputClasses} />
+              <p className="mt-1 text-xs text-slate-400">Set to 0 for free courses</p>
+            </div>
+            <div>
+              <label htmlFor="discountPercentage" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Discount Percentage (%) <small className="text-slate-400 font-normal ml-1">(Optional)</small>
+              </label>
+              <div className="relative">
+                <input type="number" id="discountPercentage" name="discountPercentage" value={formData.discountPercentage ?? ''} onChange={handleChange} min="0" max="100" step="0.01" className={inputClasses} placeholder="0 - 100" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">%</span>
+              </div>
+              <p className="mt-1 text-xs text-slate-400">Promotional percentage off the regular price</p>
+            </div>
           </div>
 
           <div>

@@ -5,6 +5,8 @@ import { getMyTeacherProfile, updateTeacherProfile } from '@/lib/api/profile';
 
 export default function PricingSettings() {
   const [hourlyRate, setHourlyRate] = useState<number>(0);
+  const [d3, setD3] = useState<number>(5);
+  const [d5, setD5] = useState<number>(10);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState('');
@@ -13,7 +15,11 @@ export default function PricingSettings() {
   useEffect(() => {
     getMyTeacherProfile()
       .then((profile) => {
-        if (profile) setHourlyRate(profile.hourlyRate || 0);
+        if (profile) {
+          setHourlyRate(profile.hourlyRate || 0);
+          setD3(profile.packageDiscount3Plus !== undefined ? profile.packageDiscount3Plus : 5);
+          setD5(profile.packageDiscount5Plus !== undefined ? profile.packageDiscount5Plus : 10);
+        }
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load profile'))
       .finally(() => setIsLoading(false));
@@ -25,7 +31,11 @@ export default function PricingSettings() {
     setSuccessMessage('');
     setError(null);
     try {
-      await updateTeacherProfile({ hourlyRate });
+      await updateTeacherProfile({ 
+        hourlyRate,
+        packageDiscount3Plus: d3,
+        packageDiscount5Plus: d5
+      });
       setSuccessMessage('Pricing updated successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
@@ -129,18 +139,50 @@ export default function PricingSettings() {
               Package Discounts
             </h3>
             <p className="text-sm text-slate-300 mb-6 leading-relaxed">
-              The platform automatically applies discounts when students book multiple sessions at once.
+              Set custom discounts for students who book multiple sessions at once.
             </p>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/10 p-4 rounded-2xl border border-white/10">
-                <p className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">3–4 Sessions</p>
-                <p className="text-2xl font-bold">5% Off</p>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold">3–4 Sessions Package</span>
+                  <span className="text-xs text-slate-400">Discount Percentage</span>
+                </div>
+                <div className="relative w-24">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={d3}
+                    onChange={(e) => setD3(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold"
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white/50 text-xs">%</span>
+                </div>
               </div>
-              <div className="bg-white/10 p-4 rounded-2xl border border-white/10">
-                <p className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">5+ Sessions</p>
-                <p className="text-2xl font-bold">10% Off</p>
+
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold">5+ Sessions Package</span>
+                  <span className="text-xs text-slate-400">Discount Percentage</span>
+                </div>
+                <div className="relative w-24">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={d5}
+                    onChange={(e) => setD5(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold"
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white/50 text-xs">%</span>
+                </div>
               </div>
             </div>
+
+            <p className="mt-6 text-[10px] text-slate-500 italic">
+              * Discounts are calculated based on the total session price.
+            </p>
           </div>
         </div>
 

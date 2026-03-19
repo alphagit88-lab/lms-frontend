@@ -149,7 +149,7 @@ function InstructorBookingsContent() {
       setActionLoading(id);
       const response = await confirmBooking(id, { meetingLink });
       updateBookingInList(response.booking);
-      setSuccessMessage('Booking approved successfully!');
+      setSuccessMessage(response.message || 'Booking approved successfully!');
     } catch (err: unknown) {
       const error = err instanceof Error ? err : new Error('Failed to confirm booking');
       setError(error.message);

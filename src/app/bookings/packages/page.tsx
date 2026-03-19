@@ -148,14 +148,12 @@ export default function PackagesPage() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
-                          {pkg.teacher && (
-                            <span className="flex items-center gap-1">
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
-                              {pkg.teacher.firstName} {pkg.teacher.lastName}
-                            </span>
-                          )}
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            {pkg.teacher ? `${pkg.teacher.firstName} ${pkg.teacher.lastName}` : 'Multi-Instructor'}
+                          </span>
                           <span>
                             {pkg.completedSessions}/{pkg.totalSessions} sessions
                           </span>
@@ -227,6 +225,11 @@ export default function PackagesPage() {
                                     </div>
                                     <div className="text-xs text-slate-500">
                                       {formatTimeRange(booking.sessionStartTime, booking.sessionEndTime)}
+                                      {booking.teacher && !pkg.teacher && (
+                                        <span className="text-blue-600 font-medium ml-1">
+                                          • {booking.teacher.firstName} {booking.teacher.lastName}
+                                        </span>
+                                      )}
                                       <span className="text-slate-400 ml-1">({duration} min)</span>
                                     </div>
                                   </div>

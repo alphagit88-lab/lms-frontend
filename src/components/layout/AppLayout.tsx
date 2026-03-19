@@ -6,6 +6,9 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/layout/NotificationBell';
+import { useCart } from '@/contexts/CartContext';
+import PackageBookingModal from '@/components/booking/PackageBookingModal';
+import { CreatePackageBookingResponse } from '@/lib/api/bookings';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -178,6 +181,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpenAt, setMobileMenuOpenAt] = useState<string | null>(null);
+  const [showCartModal, setShowCartModal] = useState(false);
+  const { cartItems, removeFromCart, clearCart } = useCart();
   const isMobileMenuOpen = mobileMenuOpenAt === pathname;
 
   const filteredNavItems = navItems.filter((item) => {
@@ -203,6 +208,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
       ? user.profilePicture
       : `${API_BASE_URL}${user.profilePicture}`
     : null;
+
+  const handlePackageSuccess = (response: CreatePackageBookingResponse) => {
+    setShowCartModal(false);
+    clearCart();
+    // Redirect to checkout if paid
+    if (response.package.finalPrice && Number(response.package.finalPrice) > 0) {
+      const recipientId = response.package.teacherId || response.bookings[0]?.teacherId;
+      router.push(`/payments/checkout?type=booking_package&referenceId=${response.package.id}&amount=${response.package.finalPrice}&recipientId=${recipientId}`);
+    } else {
+      router.push('/bookings');
+    }
+  };
+
+  const handleRemoveSlot = (slotId: string) => {
+    removeFromCart(slotId);
+  };
 
 
   if (isAdmin) {
@@ -364,6 +385,43 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
               <div className="h-10 w-px bg-slate-200/60 hidden sm:block" />
 
+              {/* Cart Indicator */}
+              {user?.role === 'student' && cartItems.length > 0 && (
+                <button 
+                  onClick={() => setShowCartModal(true)}
+                  className="relative flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-blue-600 text-white shadow-[0_8px_20px_-6px_rgba(37,99,235,0.4)] hover:bg-blue-700 hover:shadow-[0_12px_25px_-4px_rgba(37,99,235,0.5)] transition-all group/cart group"
+                  title={`${cartItems.length} sessions selected in package - Click to finalize`}
+                >
+                  <div className="relative">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    <span className="absolute -top-2 -right-2 w-4 h-4 bg-white text-blue-600 text-[9px] font-bold rounded-full flex items-center justify-center border border-blue-100 group-hover:scale-110 transition-transform">
+                      {cartItems.length}
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider hidden lg:block">Review & Book</span>
+                  
+                  {/* Tooltip detail */}
+                  <div className="absolute top-full right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 p-4 opacity-0 invisible group-hover/cart:opacity-100 group-hover/cart:visible transition-all z-50 transform translate-y-2 group-hover/cart:translate-y-0 text-left">
+                    <p className="text-[11px] font-bold text-slate-900 mb-2">Package Summary ({cartItems.length} sessions)</p>
+                    <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
+                      {cartItems.slice(0, 3).map(item => (
+                        <div key={item.id} className="text-[10px] text-slate-500 border-l-2 border-blue-200 pl-2">
+                           <div className="font-semibold text-slate-700 truncate">{item.teacherName || 'Instructor'}</div>
+                           <div className="opacity-70">{new Date(item.startTime).toLocaleDateString()}</div>
+                        </div>
+                      ))}
+                      {cartItems.length > 3 && <div className="text-[10px] text-slate-400 italic mt-1 font-medium">+{cartItems.length - 3} more sessions...</div>}
+                    </div>
+                    <div className="pt-2 border-t border-slate-50 text-[10px] text-blue-600 font-bold flex items-center gap-1.5 animate-pulse">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Click to finish booking package
+                    </div>
+                  </div>
+                </button>
+              )}
+
               <NotificationBell />
 
               <Link
@@ -431,6 +489,23 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
         </div>
       </footer>
+
+      {user?.role === 'student' && cartItems.length > 0 && (
+        <PackageBookingModal
+          isOpen={showCartModal}
+          slots={cartItems}
+          teacherName={(() => {
+            const uniqueTeachers = Array.from(new Set(cartItems.map(i => i.teacherName || 'Instructor')));
+            return uniqueTeachers.length === 1 ? uniqueTeachers[0] : 'Multiple Instructors';
+          })()}
+          onClose={() => setShowCartModal(false)}
+          onSuccess={handlePackageSuccess}
+          onRemoveSlot={handleRemoveSlot}
+          // Use 5%/10% defaults for multi-instructor
+          packageDiscount3Plus={5}
+          packageDiscount5Plus={10}
+        />
+      )}
     </div>
   );
 }

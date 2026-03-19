@@ -6,6 +6,7 @@ import { Recording, getAllRecordings, formatDuration, formatRelativeTime } from 
 import { Loader2, Video, Clock, Eye, AlertCircle, Play } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
+import { useAuth } from '@/contexts/AuthContext';
 
 function RecordingCard({ recording }: { recording: Recording }) {
     return (
@@ -63,6 +64,7 @@ function RecordingCard({ recording }: { recording: Recording }) {
 }
 
 export default function RecordingsPage() {
+    const { user } = useAuth();
     const [recordings, setRecordings] = useState<Recording[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -150,6 +152,23 @@ export default function RecordingsPage() {
                             >
                                 Clear Search
                             </button>
+                        )}
+
+                        {user?.role === 'instructor' && (
+                            <div className="mt-8 pt-8 border-t border-gray-100">
+                                <p className="text-gray-500 mb-3 font-medium">Are you an instructor looking for your session recordings?</p>
+                                <div className="flex flex-col items-center gap-2">
+                                    <Link
+                                        href="/instructor/recordings"
+                                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg inline-flex items-center gap-2 font-medium transition-colors"
+                                    >
+                                        Go to Instructor Recordings
+                                    </Link>
+                                    <p className="text-xs text-slate-400 max-w-xs">
+                                        Note: This page only shows public recordings. Your session recordings are private by default.
+                                    </p>
+                                </div>
+                            </div>
                         )}
                     </div>
                 ) : (
