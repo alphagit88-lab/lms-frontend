@@ -95,7 +95,7 @@ export default function StudentBookingsPage() {
       setSyncingId(bookingId);
       setError('');
       
-      const API_URL = typeof window !== "undefined" ? "" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000");
+      const API_URL = typeof window !== "undefined" ? "/proxied-backend" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000");
       const res = await fetch(`${API_URL}/api/bookings/${bookingId}/sync-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
