@@ -215,6 +215,23 @@ export async function getParentLinks(params?: { page?: number }): Promise<{ link
     return apiFetch(`/api/admin/parent-links${qs.toString() ? `?${qs.toString()}` : ''}`);
 }
 
+export async function getPendingParentRequests(): Promise<AdminParentLink[]> {  
+    const data = await apiFetch('/api/admin/parent-links/pending');
+    return data.requests;
+}
+
+export async function approveParentLink(id: string): Promise<void> {
+    return apiFetch(`/api/admin/parent-links/${id}/approve`, {
+        method: 'PATCH'
+    });
+}
+
+export async function rejectParentLink(id: string): Promise<void> {
+    return apiFetch(`/api/admin/parent-links/${id}/reject`, {
+        method: 'PATCH'
+    });
+}
+
 export async function createParentLink(data: { studentId: string, parentId: string, status?: string }): Promise<{ message: string, link: AdminParentLink }> {
     return apiFetch('/api/admin/parent-links', {
         method: 'POST',
