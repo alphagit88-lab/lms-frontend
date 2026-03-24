@@ -47,7 +47,13 @@ const nextConfig: NextConfig = {
   async rewrites() {
     // Determine the backend URL.
     // Ensure the backend URL never ends with a trailing slash to prevent double-slash 404s
-    let backendUrl = process.env.BACKEND_URL || 'https://lms-backend-psi-one.vercel.app';
+    const isDev = process.env.NODE_ENV === 'development';
+    let backendUrl = process.env.BACKEND_URL;
+    
+    if (!backendUrl) {
+      backendUrl = isDev ? 'http://localhost:5000' : 'https://lms-backend-psi-one.vercel.app';
+    }
+
     if (backendUrl.endsWith('/')) {
       backendUrl = backendUrl.slice(0, -1);
     }

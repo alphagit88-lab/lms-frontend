@@ -131,9 +131,14 @@ function EditCourseContent() {
       setError('');
 
       const res = await uploadCourseMedia(file);
+      // Determine if the URL is absolute (blob storage) or relative (local storage)
+      const isAbsolute = res.url.startsWith('http') || res.url.startsWith('//');
+      // If absolute, use as is. If relative, prepend API_URL (for proxying)
+      const finalUrl = isAbsolute ? res.url : (API_URL + res.url);
+
       setFormData((prev) => ({
         ...prev,
-        [field]: API_URL + res.url,
+        [field]: finalUrl,
       }));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : `Failed to upload ${field}`);
