@@ -8,7 +8,6 @@ import WeeklyCalendar from '@/components/availability/WeeklyCalendar';
 import SlotList from '@/components/availability/SlotList';
 import SlotModal from '@/components/availability/SlotModal';
 import RecurringScheduleModal from '@/components/availability/RecurringScheduleModal';
-import AssistantManagerModal from '@/components/availability/AssistantManagerModal';
 import {
   AvailabilitySlot,
   CreateSlotData,
@@ -29,7 +28,6 @@ import {
   getSlotStatusInfo,
   calculateDuration,
 } from '@/lib/api/availability';
-import { getManagedTeachers, TeacherManaged } from '@/lib/api/assistants';
 import AppLayout from '@/components/layout/AppLayout';
 
 type ViewMode = 'calendar' | 'list';
@@ -43,12 +41,6 @@ function InstructorAvailabilityContent() {
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()));
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
-
-  // Assistant management state
-  const [managedTeachers, setManagedTeachers] = useState<TeacherManaged[]>([]);
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
-  const [isAssistantModalOpen, setIsAssistantModalOpen] = useState(false);
-  const [isAssistant, setIsAssistant] = useState(false);
 
   // Data state
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
@@ -70,24 +62,7 @@ function InstructorAvailabilityContent() {
     blocked: slots.filter((s) => s.status === 'blocked').length,
   };
 
-  // Load managed teachers (check if user is an assistant)
-  useEffect(() => {
-    const checkAssistantStatus = async () => {
-      try {
-        const teachers = await getManagedTeachers();
-        setManagedTeachers(teachers);
-        if (teachers.length > 0 && user?.role !== 'instructor' && user?.role !== 'admin') {
-          setIsAssistant(true);
-          setSelectedTeacherId(teachers[0].teacherId);
-        }
-      } catch (err) {
-        console.error('Failed to load managed teachers', err);
-      }
-    };
-    checkAssistantStatus();
-  }, [user]);
-
-  // Load slots
+  // Stats
   const loadSlots = useCallback(async () => {
     try {
       setLoading(true);
@@ -98,10 +73,7 @@ function InstructorAvailabilityContent() {
       const endDate = new Date(weekStart);
       endDate.setDate(endDate.getDate() + 7);
 
-      const targetTeacherId = selectedTeacherId || undefined;
-
       const data = await getMySlots({
-        teacherId: targetTeacherId,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         status: filterStatus === 'all' ? undefined : filterStatus,
@@ -118,7 +90,7 @@ function InstructorAvailabilityContent() {
     } finally {
       setLoading(false);
     }
-  }, [weekStart, filterStatus, router, selectedTeacherId]);
+  }, [weekStart, filterStatus, router]);
 
   useEffect(() => {
     if (user) {
@@ -167,7 +139,7 @@ function InstructorAvailabilityContent() {
 
   // CRUD handlers
   const handleSave = async (data: CreateSlotData) => {
-    await createSlot({ ...data, targetTeacherId: selectedTeacherId || undefined });
+    await createSlot({ ...data });
     await loadSlots();
   };
 
@@ -192,21 +164,15 @@ function InstructorAvailabilityContent() {
   };
 
   const handleCancelFutureRecurring = async (dayOfWeek: string) => {
-    await cancelFutureRecurring({ dayOfWeek, teacherId: selectedTeacherId || undefined });
+    await cancelFutureRecurring({ dayOfWeek });
     await loadSlots();
   };
 
   const handleRecurringSubmit = async (data: CreateRecurringData): Promise<RecurringResponse> => {
-    const response = await createRecurringSlots({ ...data, targetTeacherId: selectedTeacherId || undefined });
+    const response = await createRecurringSlots({ ...data });
     await loadSlots();
     return response;
   };
-
-  // Determine if viewing as assistant
-  const isEditingAsAssistant = selectedTeacherId && selectedTeacherId !== user?.id;
-  const currentTeacherName = isEditingAsAssistant 
-    ? managedTeachers.find(t => t.teacherId === selectedTeacherId)?.name || 'Teacher'
-    : 'My';
 
   return (
     <AppLayout>
@@ -214,50 +180,14 @@ function InstructorAvailabilityContent() {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
-            {isEditingAsAssistant ? `${currentTeacherName}'s Availability` : 'My Availability'}
+            My Availability
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            {isEditingAsAssistant 
-              ? `You are managing settings for ${currentTeacherName}` 
-              : 'Manage your schedule and available time slots for students'}
+            Manage your schedule and available time slots for students
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Teacher Selector for Assistants */}
-          {(user?.role === 'instructor' || managedTeachers.length > 0) && (
-            <div className="relative mr-2">
-              <select
-                value={selectedTeacherId || user?.id || ''}
-                onChange={(e) => setSelectedTeacherId(e.target.value === user?.id ? null : e.target.value)}
-                className="pl-3 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 appearance-none min-w-[180px]"
-              >
-                {user?.role === 'instructor' && <option value={user.id}>Managing: Myself</option>}
-                {managedTeachers.map(t => (
-                  <option key={t.teacherId} value={t.teacherId}>Managing: {t.name}</option>
-                ))}
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-          )}
-
-          {user?.role === 'instructor' && (
-            <button
-              onClick={() => setIsAssistantModalOpen(true)}
-              className="px-4 py-2.5 bg-white text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition font-medium text-sm flex items-center gap-2 shadow-sm mr-2"
-              title="Delegate to Assistants"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-              Assistants
-            </button>
-          )}
-
           <button
             onClick={() => setIsRecurringModalOpen(true)}
             className="px-4 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition font-medium text-sm flex items-center gap-2 shadow-sm"
@@ -411,12 +341,6 @@ function InstructorAvailabilityContent() {
         onClose={() => setIsRecurringModalOpen(false)}
         onSubmit={handleRecurringSubmit}
       />
-
-      {/* Assistant Manager Modal */}
-      <AssistantManagerModal
-        isOpen={isAssistantModalOpen}
-        onClose={() => setIsAssistantModalOpen(false)}
-      />
     </AppLayout>
   );
 }
@@ -424,8 +348,6 @@ function InstructorAvailabilityContent() {
 export default function InstructorAvailabilityPage() {
   const { user, loading } = useAuth();
   
-  // Custom auth check for this page: allow instructors OR assistants
-  // (We'll check managedTeachers inside the component to be extra safe)
   if (loading) return null;
 
   return (
