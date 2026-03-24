@@ -19,7 +19,6 @@ import {
   getMyTeacherProfile,
   updateTeacherProfile,
 } from '@/lib/api/teachers';
-import { getManagedTeachers, TeacherManaged } from '@/lib/api/assistants';
 
 type TabId = 'pending' | 'upcoming' | 'past';
 
@@ -32,38 +31,16 @@ function InstructorBookingsContent() {
   const [actionLoading, setActionLoading] = useState<string | null>(null); // booking ID being acted on
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Assistant & Teacher focus state
-  const [managedTeachers, setManagedTeachers] = useState<TeacherManaged[]>([]);
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
-
   // Auto-confirm state
   const [autoConfirm, setAutoConfirm] = useState(false);
   const [autoConfirmLoading, setAutoConfirmLoading] = useState(false);
 
-  // Check if assistant
-  useEffect(() => {
-    const checkAssistantStatus = async () => {
-      try {
-        const teachers = await getManagedTeachers();
-        setManagedTeachers(teachers);
-        if (teachers.length > 0 && user?.role !== 'instructor' && user?.role !== 'admin') {
-          setSelectedTeacherId(teachers[0].teacherId);
-        }
-      } catch (err) {
-        console.error('Failed to load managed teachers', err);
-      }
-    };
-    checkAssistantStatus();
-  }, [user]);
 
   const loadBookings = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-      // Use selectedTeacherId if present
-      const data = await getTeacherBookings({ 
-        teacherId: selectedTeacherId || undefined 
-      });
+      const data = await getTeacherBookings({});
       setBookings(data);
     } catch (err: unknown) {
       const error = err instanceof Error ? err : new Error('Failed to load bookings');
@@ -71,24 +48,18 @@ function InstructorBookingsContent() {
     } finally {
       setLoading(false);
     }
-  }, [selectedTeacherId]);
+  }, []);
 
   // Load teacher profile to get autoConfirm setting
   useEffect(() => {
-    const targetId = selectedTeacherId || user?.id;
-    if (targetId) {
-      // Note: getMyTeacherProfile usually fetches for current user. 
-      // We might need an API update if assistants need to manage auto-confirm.
-      // For now, we only show/allow toggle if it's the teacher themselves.
-      if (targetId === user?.id) {
-        getMyTeacherProfile()
-          .then((profile) => {
-            setAutoConfirm(profile.autoConfirmBookings);
-          })
-          .catch(() => {});
-      }
+    if (user?.id) {
+      getMyTeacherProfile()
+        .then((profile) => {
+          setAutoConfirm(profile.autoConfirmBookings);
+        })
+        .catch(() => {});
     }
-  }, [user?.id, selectedTeacherId]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (user) {
@@ -242,51 +213,22 @@ function InstructorBookingsContent() {
     },
   ];
 
-  const isEditingAsAssistant = selectedTeacherId && selectedTeacherId !== user?.id;
-  const currentTeacherName = isEditingAsAssistant 
-    ? managedTeachers.find(t => t.teacherId === selectedTeacherId)?.name || 'Teacher'
-    : 'My';
-
   return (
     <AppLayout>
       {/* Page Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
-            {isEditingAsAssistant ? `${currentTeacherName}'s Bookings` : 'Manage Bookings'}
+            Manage Bookings
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            {isEditingAsAssistant 
-              ? `You are managing requests for ${currentTeacherName}`
-              : 'Review requests, manage sessions, and track your teaching history'}
+            Review requests, manage sessions, and track your teaching history
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Teacher Selector for Assistants */}
-          {(user?.role === 'instructor' || managedTeachers.length > 0) && (
-            <div className="relative">
-              <select
-                value={selectedTeacherId || user?.id || ''}
-                onChange={(e) => setSelectedTeacherId(e.target.value === user?.id ? null : e.target.value)}
-                className="pl-3 pr-8 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 appearance-none min-w-[180px] shadow-sm"
-              >
-                {user?.role === 'instructor' && <option value={user.id}>Managing: Myself</option>}
-                {managedTeachers.map(t => (
-                  <option key={t.teacherId} value={t.teacherId}>Managing: {t.name}</option>
-                ))}
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-          )}
-
-          {/* Auto-Confirm Toggle (Only shown for self or if teacher) */}
-          {(!isEditingAsAssistant) && (
-            <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm">
+          {/* Auto-Confirm Toggle */}
+          <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm">
               <div className="text-right hidden sm:block">
                 <div className="text-sm font-medium text-slate-700 leading-tight">Auto-Confirm</div>
                 <div className="text-[10px] text-slate-400">
@@ -309,7 +251,6 @@ function InstructorBookingsContent() {
                 />
               </button>
             </div>
-          )}
         </div>
       </div>
 
