@@ -7,7 +7,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { getCourseById, Course, Lesson } from '@/lib/api/courses';
 
-const API_BASE_URL = typeof window !== "undefined" ? "" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000");
+const API_BASE_URL = typeof window !== "undefined" ? "/proxied-backend" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000");
 
 async function getLessonById(lessonId: string): Promise<Lesson> {
     const res = await fetch(`${API_BASE_URL}/api/lessons/${lessonId}`, {

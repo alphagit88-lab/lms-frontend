@@ -8,7 +8,7 @@ import { createCourse, getCategories, Category, CreateCourseData, uploadCourseMe
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
 
-const API_URL = typeof window !== "undefined" ? "" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000");
+const API_URL = typeof window !== "undefined" ? "/proxied-backend" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000");
 
 function CreateCourseContent() {
   const router = useRouter();

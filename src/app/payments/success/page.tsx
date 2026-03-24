@@ -13,7 +13,7 @@ function SuccessContent() {
     const [isVerifying, setIsVerifying] = useState(false);
     const [message, setMessage] = useState("");
 
-    const API_URL = typeof window !== "undefined" ? "" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000");
+    const API_URL = typeof window !== "undefined" ? "/proxied-backend" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000");
 
     const fetchStatus = useCallback(async () => {
         if (!orderId) return;

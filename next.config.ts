@@ -44,6 +44,29 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    // Determine the backend URL.
+    // Ensure the backend URL never ends with a trailing slash to prevent double-slash 404s
+    let backendUrl = process.env.BACKEND_URL || 'https://lms-backend-psi-one.vercel.app';
+    if (backendUrl.endsWith('/')) {
+      backendUrl = backendUrl.slice(0, -1);
+    }
+    
+    return {
+      fallback: [
+        {
+          source: '/proxied-backend/:path*',
+          // Proxy all routes unequivocally to the real backend server
+          destination: `${backendUrl}/:path*`,
+        },
+        {
+          source: '/uploads/:path*',
+          // Also proxy uploads serving if they check legacy paths
+          destination: `${backendUrl}/uploads/:path*`,
+        }
+      ]
+    };
+  },
 };
 
 export default nextConfig;
