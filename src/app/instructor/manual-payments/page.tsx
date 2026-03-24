@@ -5,7 +5,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { ManualPayment, getPendingManualPayments, reviewManualPayment } from "@/lib/api/payments";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:3001";
+const API_BASE = typeof window !== "undefined" ? "" : (typeof window !== "undefined" ? "" : (process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:3001"));
 
 function statusBadge(status: string) {
     const map: Record<string, string> = {

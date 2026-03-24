@@ -13,7 +13,7 @@ import {
 } from "@/lib/api/payments";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:3001";
+  typeof window !== "undefined" ? "" : (process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:3001");
 
 type Tab = "bank-transfer" | "payhere";
 

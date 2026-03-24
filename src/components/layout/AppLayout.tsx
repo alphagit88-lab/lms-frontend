@@ -10,7 +10,7 @@ import { useCart } from '@/contexts/CartContext';
 import PackageBookingModal from '@/components/booking/PackageBookingModal';
 import { CreatePackageBookingResponse } from '@/lib/api/bookings';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = typeof window !== "undefined" ? "" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000");
 
 interface AppLayoutProps {
   children: React.ReactNode;
