@@ -353,6 +353,9 @@ function RecordingModal({
   const [error, setError] = useState('');
   const [sessions, setSessions] = useState<LiveSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [uploadMode, setUploadMode] = useState<'url' | 'file'>(recording ? 'url' : 'file'); // Default to file upload for new
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedThumbnailFile, setSelectedThumbnailFile] = useState<File | null>(null);
 
   // Load instructor's sessions for the dropdown
   useEffect(() => {
@@ -367,7 +370,7 @@ function RecordingModal({
 
   // YouTube Thumbnail Auto-Detection
   useEffect(() => {
-    if (formData.fileUrl && !formData.thumbnailUrl) {
+    if (uploadMode === 'url' && formData.fileUrl && !formData.thumbnailUrl && !selectedThumbnailFile) {
       const ytMatch = formData.fileUrl.match(/(?:youtube\.be\/|youtube\.com\/(?:watch\?v=|v\/|embed\/|user\/[^\/]+\/u\/1\/|oembed\?url=))([^#\&\?]*)/);
       if (ytMatch && ytMatch[1]) {
         const videoId = ytMatch[1];
@@ -378,7 +381,7 @@ function RecordingModal({
         }));
       }
     }
-  }, [formData.fileUrl, formData.thumbnailUrl]);
+  }, [formData.fileUrl, formData.thumbnailUrl, uploadMode, selectedThumbnailFile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -386,19 +389,43 @@ function RecordingModal({
     setLoading(true);
 
     try {
+      let dataToSend: CreateRecordingData | FormData;
+      const shouldUseFormData = (uploadMode === 'file' && selectedFile) || selectedThumbnailFile;
+
+      if (shouldUseFormData) {
+        const formDataObj = new FormData();
+        if (formData.sessionId) formDataObj.append('sessionId', formData.sessionId);
+        
+        if (uploadMode === 'file' && selectedFile) {
+           formDataObj.append('videoFile', selectedFile);
+        } else if (formData.fileUrl) {
+           formDataObj.append('fileUrl', formData.fileUrl);
+        }
+
+        if (selectedThumbnailFile) {
+            formDataObj.append('thumbnailFile', selectedThumbnailFile);
+        } else if (formData.thumbnailUrl) {
+            formDataObj.append('thumbnailUrl', formData.thumbnailUrl);
+        }
+        
+        if (formData.durationMinutes) formDataObj.append('durationMinutes', String(formData.durationMinutes));
+        if (formData.videoQuality) formDataObj.append('videoQuality', formData.videoQuality);
+        formDataObj.append('isPublic', String(formData.isPublic));
+        
+        if (formData.metadata) formDataObj.append('metadata', JSON.stringify(formData.metadata));
+
+        dataToSend = formDataObj;
+      } else {
+        if (!formData.fileUrl) throw new Error("Please provide a video URL");
+        dataToSend = formData;
+      }
+
       if (recording) {
         // Update existing recording
-        await updateRecording(recording.id, {
-          fileUrl: formData.fileUrl,
-          durationMinutes: formData.durationMinutes,
-          videoQuality: formData.videoQuality,
-          thumbnailUrl: formData.thumbnailUrl,
-          isPublic: formData.isPublic,
-          metadata: formData.metadata,
-        });
+        await updateRecording(recording.id, dataToSend);
       } else {
         // Create new recording
-        await createRecording(formData);
+        await createRecording(dataToSend);
       }
       onSuccess();
     } catch (err) {
@@ -457,7 +484,7 @@ function RecordingModal({
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
                   >
-                    <option value="">â€” Select a session â€”</option>
+                    <option value="">— Select a session —</option>
                     {sessions.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.title} ({new Date(s.startTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })})
@@ -468,23 +495,102 @@ function RecordingModal({
               </div>
             )}
 
-            {/* File URL */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Recording URL <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="url"
-                value={formData.fileUrl}
-                onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
-                required
-                placeholder="https://example.com/recording.mp4"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Direct URL to the video file (Zoom link, cloud storage, etc.)
-              </p>
+            {/* Upload Mode Toggle */}
+            <div className="flex bg-gray-100 p-1 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setUploadMode('url')}
+                className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  uploadMode === 'url' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                Link External URL
+              </button>
+              <button
+                type="button"
+                onClick={() => setUploadMode('file')}
+                className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  uploadMode === 'file' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                Upload Video
+              </button>
             </div>
+
+            {/* File URL or Upload */}
+            {uploadMode === 'url' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Recording URL <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="url"
+                  value={formData.fileUrl}
+                  onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
+                  required
+                  placeholder="https://example.com/recording.mp4"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Direct URL to the video file (Zoom link, cloud storage, etc.)
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Video File <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="space-y-1 text-center">
+                    <svg
+                      className="mx-auto h-12 w-12 text-gray-400"
+                      stroke="currentColor"
+                      fill="none"
+                      viewBox="0 0 48 48"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <div className="flex text-sm text-gray-600 justify-center">
+                      <label
+                        htmlFor="file-upload"
+                        className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                      >
+                        <span>Upload a file</span>
+                        <input
+                          id="file-upload"
+                          name="file-upload"
+                          type="file"
+                          accept="video/*"
+                          className="sr-only"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              setSelectedFile(e.target.files[0]);
+                              // Estimate duration or size if possible?
+                              setFormData(prev => ({ ...prev, fileSize: e.target.files![0].size }));
+                            }
+                          }}
+                        />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      MP4, WebM, MKV up to 500MB
+                    </p>
+                    {selectedFile && (
+                      <div className="mt-2 text-sm text-green-600 font-medium">
+                        Selected: {selectedFile.name} ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Duration */}
             <div>
@@ -522,18 +628,85 @@ function RecordingModal({
               </select>
             </div>
 
-            {/* Thumbnail URL */}
+            {/* Thumbnail */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Thumbnail URL
+                Thumbnail Image
               </label>
-              <input
-                type="url"
-                value={formData.thumbnailUrl || ''}
-                onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                placeholder="https://example.com/thumbnail.jpg"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
+              <div className="space-y-2 border border-gray-200 rounded-lg p-3 bg-gray-50">
+                
+                {selectedThumbnailFile ? (
+                   <div className="flex justify-between items-center p-2 bg-blue-50 border border-blue-200 rounded">
+                       <div className="flex items-center gap-2 overflow-hidden">
+                           <svg className="w-5 h-5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                           <span className="text-sm text-blue-800 truncate font-medium">{selectedThumbnailFile.name}</span>
+                           <span className="text-xs text-blue-600 shrink-0">({(selectedThumbnailFile.size / 1024).toFixed(0)} KB)</span>
+                       </div>
+                       <button 
+                           type="button" 
+                           onClick={() => setSelectedThumbnailFile(null)}
+                           className="text-gray-400 hover:text-red-600 transition-colors p-1"
+                           title="Remove image"
+                        >
+                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                       </button>
+                   </div>
+                ) : (
+                    <>
+                        {/* File Upload Input */}
+                        <div className="relative">
+                            <input
+                                type="file"
+                                id="thumbnail-upload"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                        setSelectedThumbnailFile(e.target.files[0]);
+                                        setFormData(prev => ({ ...prev, thumbnailUrl: undefined })); // Clear URL
+                                    }
+                                }}
+                                className="hidden"
+                            />
+                            <label 
+                                htmlFor="thumbnail-upload"
+                                className="flex justify-center items-center gap-2 w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors"
+                            >
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                Upload Image
+                            </label>
+                        </div>
+
+                         <div className="relative flex items-center py-2">
+                             <div className="grow border-t border-gray-300"></div>
+                             <span className="shrink-0 mx-4 text-gray-400 text-xs font-semibold">OR USE URL</span>
+                             <div className="grow border-t border-gray-300"></div>
+                         </div>
+                         
+                         <input
+                            type="url"
+                            value={formData.thumbnailUrl || ''}
+                            onChange={(e) => {
+                                setFormData({ ...formData, thumbnailUrl: e.target.value });
+                            }}
+                            placeholder="https://example.com/thumbnail.jpg"
+                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-600 focus:ring-2 focus:ring-blue-500"
+                          />
+                    </>
+                )}
+                
+                {/* Preview if URL exists (and no file selected) */}
+                {!selectedThumbnailFile && formData.thumbnailUrl && (
+                    <div className="mt-2 relative w-full h-32 bg-gray-100 rounded-md overflow-hidden border border-gray-200">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img 
+                            src={formData.thumbnailUrl} 
+                            alt="Thumbnail Preview" 
+                            className="object-contain w-full h-full"
+                            onError={(e) => (e.currentTarget.style.display = 'none')}
+                        />
+                    </div>
+                )}
+              </div>
             </div>
 
 

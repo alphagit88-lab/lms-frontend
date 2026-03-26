@@ -148,7 +148,7 @@ function BankTransferTab() {
                     <td className="px-5 py-4">
                       {p.bankSlipUrl ? (
                         <a
-                          href={`${API_BASE}${p.bankSlipUrl}`}
+                          href={p.bankSlipUrl.startsWith('http') ? p.bankSlipUrl : `${API_BASE}${p.bankSlipUrl}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"

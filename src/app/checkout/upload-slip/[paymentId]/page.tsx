@@ -141,7 +141,7 @@ function UploadSlipContent() {
                                     className={`border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center cursor-pointer transition ${file ? "border-emerald-300 bg-emerald-50" : "border-slate-200 hover:border-blue-300 hover:bg-blue-50/50"}`}
                                 >
                                     {preview ? (
-                                        <Image src={preview} alt="slip preview" width={400} height={208} unoptimized className="max-h-52 w-auto rounded-xl object-contain mb-3" />
+                                        <Image src={preview} alt="slip preview" width={400} height={208} unoptimized className="max-h-52 w-auto h-auto rounded-xl object-contain mb-3" />
                                     ) : (
                                         <svg className="w-10 h-10 text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />

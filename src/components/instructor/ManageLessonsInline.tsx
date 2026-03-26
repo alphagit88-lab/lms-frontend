@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getLessonsForCourse,
   createLesson,
@@ -25,6 +25,8 @@ interface LessonFormState {
   slug: string;
   content: string;
   videoUrl: string;
+  videoType: 'url' | 'upload';
+  videoFile: File | null;
   durationMinutes: number;
   isPreview: boolean;
 }
@@ -34,6 +36,8 @@ const emptyForm: LessonFormState = {
   slug: '',
   content: '',
   videoUrl: '',
+  videoType: 'url',
+  videoFile: null,
   durationMinutes: 0,
   isPreview: false,
 };
@@ -50,6 +54,7 @@ function LessonModal({ open, lesson, onClose, onSave }: LessonModalProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [slugEdited, setSlugEdited] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -59,6 +64,8 @@ function LessonModal({ open, lesson, onClose, onSave }: LessonModalProps) {
           slug: lesson.slug,
           content: lesson.content || '',
           videoUrl: lesson.videoUrl || '',
+          videoType: lesson.videoUrl && !lesson.videoUrl.startsWith('http') ? 'upload' : 'url',
+          videoFile: null,
           durationMinutes: lesson.durationMinutes,
           isPreview: lesson.isPreview,
         });
@@ -96,7 +103,8 @@ function LessonModal({ open, lesson, onClose, onSave }: LessonModalProps) {
         title: form.title.trim(),
         slug: form.slug.trim(),
         content: form.content.trim() || undefined,
-        videoUrl: form.videoUrl.trim() || undefined,
+        videoUrl: form.videoType === 'url' ? (form.videoUrl.trim() || undefined) : undefined,
+        videoFile: form.videoType === 'upload' ? (form.videoFile || undefined) : undefined,
         durationMinutes: Number(form.durationMinutes) || 0,
         isPreview: form.isPreview,
       });
@@ -114,9 +122,9 @@ function LessonModal({ open, lesson, onClose, onSave }: LessonModalProps) {
     'w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm';
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl w-full max-w-lg shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col max-h-[90vh] animate-in slide-in-from-bottom-4 zoom-in-95 duration-200">
+      <div className="relative bg-white rounded-2xl w-full max-w-lg shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col max-h-[90vh] animate-in slide-in-from-bottom-4 zoom-in-95 duration-200 mt-16">
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-white sticky top-0 z-10">
           <div>
             <h2 className="text-lg font-bold text-slate-800">
@@ -156,12 +164,67 @@ function LessonModal({ open, lesson, onClose, onSave }: LessonModalProps) {
                 required placeholder="setting-up-environment" className={inputCls} />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Video URL</label>
-                <input type="url" value={form.videoUrl} onChange={(e) => setForm((p) => ({ ...p, videoUrl: e.target.value }))}
-                  placeholder="https://youtube.com/..." className={inputCls} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+              <div className="sm:col-span-2 flex items-center gap-6 pb-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="videoType"
+                    checked={form.videoType === 'url'}
+                    onChange={() => setForm(p => ({ ...p, videoType: 'url' }))}
+                    className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-700">Video URL</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="videoType"
+                    checked={form.videoType === 'upload'}
+                    onChange={() => setForm(p => ({ ...p, videoType: 'upload' }))}
+                    className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-700">Upload Video</span>
+                </label>
               </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  {form.videoType === 'url' ? 'Video URL' : 'Video File'}
+                </label>
+                {form.videoType === 'url' ? (
+                  <input type="url" value={form.videoUrl} onChange={(e) => setForm((p) => ({ ...p, videoUrl: e.target.value }))}
+                    placeholder="https://youtube.com/..." className={inputCls} />
+                ) : (
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="video/*"
+                      ref={fileInputRef}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setForm(p => ({ ...p, videoFile: file }));
+                      }}
+                       className="block w-full text-sm text-slate-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-xl file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100
+                        cursor-pointer border border-slate-200 rounded-xl bg-slate-50 p-1"
+                    />
+                     {lesson?.videoUrl && !lesson.videoUrl.startsWith('http') && !form.videoFile && (
+                      <p className="mt-1 text-xs text-slate-500">
+                        Current file: {lesson.videoUrl.split('/').pop()}
+                      </p>
+                    )}
+                  </div>
+                )}
+                 <p className="mt-1 text-xs text-slate-400">
+                  {form.videoType === 'url' ? 'YouTube, Vimeo, or direct link' : 'Max 100MB. MP4, WebM'}
+                </p>
+              </div>
+              
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Duration <span className="text-slate-400 font-normal">(mins)</span></label>
                 <input type="number" value={form.durationMinutes}

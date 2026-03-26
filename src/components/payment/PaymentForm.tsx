@@ -108,6 +108,7 @@ export default function PaymentForm({
                 method="POST"
                 action={checkoutUrl}
                 style={{ display: "none" }}
+                target="_top" // Ensure we break out of any iframes
             >
                 {Object.entries(checkoutParams).map(([key, value]) => (
                     <input key={key} type="hidden" name={key} value={value} />

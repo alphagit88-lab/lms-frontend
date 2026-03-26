@@ -5,6 +5,7 @@ export interface CreateSessionPayload {
     startTime: string;  // ISO 8601
     endTime: string;    // ISO 8601
     classId?: string;
+    courseId?: string;
     description?: string;
     sessionType?: 'live' | 'recorded' | 'hybrid';
     createZoomMeeting?: boolean;
@@ -21,6 +22,7 @@ export interface Session {
     sessionType: 'live' | 'recorded' | 'hybrid';
     status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
     meetingLink?: string;
+    meetingStartLink?: string;
     meetingId?: string;
     meetingPassword?: string;
     isRecorded: boolean;

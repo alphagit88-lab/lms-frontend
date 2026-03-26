@@ -106,14 +106,15 @@ export async function getRecordingById(id: string): Promise<Recording> {
 /**
  * Create a new recording (Instructor/Admin only)
  */
-export async function createRecording(data: CreateRecordingData): Promise<Recording> {
+export async function createRecording(data: CreateRecordingData | FormData): Promise<Recording> {
+  const isFormData = data instanceof FormData;
   const response = await fetch(`${API_BASE_URL}/api/recordings`, {
     method: 'POST',
-    headers: {
+    headers: isFormData ? undefined : {
       'Content-Type': 'application/json',
     },
     credentials: 'include',
-    body: JSON.stringify(data),
+    body: isFormData ? data : JSON.stringify(data),
   });
 
   if (!response.ok) {
@@ -128,14 +129,15 @@ export async function createRecording(data: CreateRecordingData): Promise<Record
 /**
  * Update a recording (Instructor/Admin only)
  */
-export async function updateRecording(id: string, data: UpdateRecordingData): Promise<Recording> {
+export async function updateRecording(id: string, data: UpdateRecordingData | FormData): Promise<Recording> {
+  const isFormData = data instanceof FormData;
   const response = await fetch(`${API_BASE_URL}/api/recordings/${id}`, {
     method: 'PUT',
-    headers: {
+    headers: isFormData ? undefined : {
       'Content-Type': 'application/json',
     },
     credentials: 'include',
-    body: JSON.stringify(data),
+    body: isFormData ? data : JSON.stringify(data),
   });
 
   if (!response.ok) {

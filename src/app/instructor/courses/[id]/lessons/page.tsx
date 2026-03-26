@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -36,6 +36,8 @@ interface LessonFormState {
   slug: string;
   content: string;
   videoUrl: string;
+  videoType: 'url' | 'upload';
+  videoFile: File | null;
   durationMinutes: number;
   isPreview: boolean;
 }
@@ -45,6 +47,8 @@ const emptyForm: LessonFormState = {
   slug: '',
   content: '',
   videoUrl: '',
+  videoType: 'url',
+  videoFile: null,
   durationMinutes: 0,
   isPreview: false,
 };
@@ -61,6 +65,7 @@ function LessonModal({ open, lesson, onClose, onSave }: LessonModalProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [slugEdited, setSlugEdited] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -70,7 +75,9 @@ function LessonModal({ open, lesson, onClose, onSave }: LessonModalProps) {
           slug: lesson.slug,
           content: lesson.content || '',
           videoUrl: lesson.videoUrl || '',
-          durationMinutes: lesson.durationMinutes,
+          videoType: 'url',
+          videoFile: null,
+          durationMinutes: lesson.durationMinutes || 0,
           isPreview: lesson.isPreview,
         });
         setSlugEdited(true); // don't auto-generate on edit
@@ -107,7 +114,8 @@ function LessonModal({ open, lesson, onClose, onSave }: LessonModalProps) {
         title: form.title.trim(),
         slug: form.slug.trim(),
         content: form.content.trim() || undefined,
-        videoUrl: form.videoUrl.trim() || undefined,
+        videoUrl: form.videoType === 'url' ? (form.videoUrl.trim() || undefined) : undefined,
+        videoFile: form.videoType === 'upload' ? (form.videoFile || undefined) : undefined,
         durationMinutes: Number(form.durationMinutes) || 0,
         isPreview: form.isPreview,
       });
@@ -185,17 +193,72 @@ function LessonModal({ open, lesson, onClose, onSave }: LessonModalProps) {
             <p className="mt-1 text-xs text-slate-400">Auto-generated from title; lowercase letters, numbers, and hyphens only.</p>
           </div>
 
-          {/* Video URL */}
+          {/* Video URL / Upload */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Video URL</label>
-            <input
-              type="url"
-              value={form.videoUrl}
-              onChange={(e) => setForm((p) => ({ ...p, videoUrl: e.target.value }))}
-              placeholder="https://www.youtube.com/watch?v=..."
-              className={inputCls}
-            />
-            <p className="mt-1 text-xs text-slate-400">YouTube, Vimeo, or direct video link.</p>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Video Content</label>
+            
+            <div className="flex items-center gap-6 mb-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="videoType"
+                  checked={form.videoType === 'url'}
+                  onChange={() => setForm(p => ({ ...p, videoType: 'url' }))}
+                  className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                />
+                <span className="text-sm text-slate-700">Video URL</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="videoType"
+                  checked={form.videoType === 'upload'}
+                  onChange={() => setForm(p => ({ ...p, videoType: 'upload' }))}
+                  className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                />
+                <span className="text-sm text-slate-700">Upload Video</span>
+              </label>
+            </div>
+
+            {form.videoType === 'url' ? (
+              <input
+                type="url"
+                value={form.videoUrl}
+                onChange={(e) => setForm((p) => ({ ...p, videoUrl: e.target.value }))}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className={inputCls}
+              />
+            ) : (
+              <div className="border border-dashed border-slate-300 rounded-lg p-4 bg-slate-50">
+                 <input
+                  type="file"
+                  accept="video/*"
+                  ref={fileInputRef}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setForm(p => ({ ...p, videoFile: file }));
+                  }}
+                  className="block w-full text-sm text-slate-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-100 file:text-blue-700
+                    hover:file:bg-blue-200
+                    cursor-pointer"
+                />
+                {lesson?.videoUrl && !lesson.videoUrl.startsWith('http') && !form.videoFile && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Currently using uploaded file. Upload new one to replace.
+                  </p>
+                )}
+              </div>
+            )}
+            
+            <p className="mt-1 text-xs text-slate-400">
+              {form.videoType === 'url' 
+                ? 'YouTube, Vimeo, or direct video link.' 
+                : 'Max size 100MB. MP4, WebM supported.'}
+            </p>
           </div>
 
           {/* Duration */}

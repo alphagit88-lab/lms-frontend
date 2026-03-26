@@ -923,7 +923,7 @@ export default function AdminPage() {
                                                             <td className="px-5 py-4">
                                                                 {p.bankSlipUrl ? (
                                                                     <a
-                                                                        href={`${typeof window !== "undefined" ? "/proxied-backend" : (process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:3001")}${p.bankSlipUrl}`}
+                                                                        href={p.bankSlipUrl.startsWith("http") ? p.bankSlipUrl : `${typeof window !== "undefined" ? "/proxied-backend" : (process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:3001")}${p.bankSlipUrl}`}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
                                                                         className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
