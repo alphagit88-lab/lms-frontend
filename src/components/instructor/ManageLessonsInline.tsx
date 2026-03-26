@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { upload } from '@vercel/blob/client';
 import {
   getLessonsForCourse,
   createLesson,
@@ -99,12 +100,25 @@ function LessonModal({ open, lesson, onClose, onSave }: LessonModalProps) {
 
     try {
       setSaving(true);
+      
+      let finalVideoUrl = form.videoType === 'url' ? (form.videoUrl.trim() || undefined) : undefined;
+
+      // Handle direct file upload to Vercel Blob (client-side)
+      if (form.videoType === 'upload' && form.videoFile) {
+        // Upload to Vercel Blob
+        const blob = await upload(form.videoFile.name, form.videoFile, {
+          access: 'public',
+          handleUploadUrl: '/proxied-backend/api/upload/blob',
+        });
+        finalVideoUrl = blob.url;
+      }
+
       await onSave({
         title: form.title.trim(),
         slug: form.slug.trim(),
         content: form.content.trim() || undefined,
-        videoUrl: form.videoType === 'url' ? (form.videoUrl.trim() || undefined) : undefined,
-        videoFile: form.videoType === 'upload' ? (form.videoFile || undefined) : undefined,
+        videoUrl: finalVideoUrl,
+        videoFile: undefined, // Don't send file to backend
         durationMinutes: Number(form.durationMinutes) || 0,
         isPreview: form.isPreview,
       });
