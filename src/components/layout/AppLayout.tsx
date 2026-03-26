@@ -289,6 +289,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </aside>
 
         <div className="flex-1 flex flex-col min-w-0">
+          {/* Desktop Header */}
+          <header className="hidden lg:flex h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 items-center justify-end px-8 sticky top-0 z-40">
+            <div className="flex items-center gap-4">
+              <NotificationBell />
+            </div>
+          </header>
+
           <header className="lg:hidden h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40">
             <Link href="/" className="flex items-center gap-2">
               <div className="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center">

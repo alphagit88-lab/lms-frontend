@@ -361,6 +361,7 @@ export interface CreateLessonData {
   slug: string;
   content?: string;
   videoUrl?: string;
+  videoFile?: File;
   durationMinutes?: number;
   isPreview?: boolean;
 }
@@ -370,6 +371,7 @@ export interface UpdateLessonData {
   slug?: string;
   content?: string;
   videoUrl?: string;
+  videoFile?: File;
   durationMinutes?: number;
   isPreview?: boolean;
   isPublished?: boolean;
@@ -377,10 +379,16 @@ export interface UpdateLessonData {
 }
 
 async function lessonApiFetch(endpoint: string, options?: RequestInit) {
+  const headers: HeadersInit = { ...options?.headers };
+  
+  if (!(options?.body instanceof FormData)) {
+    (headers as Record<string, string>)['Content-Type'] = 'application/json';
+  }
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers,
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'An error occurred');
@@ -393,21 +401,68 @@ export async function getLessonsForCourse(courseId: string): Promise<Lesson[]> {
 }
 
 export async function createLesson(courseId: string, lessonData: CreateLessonData): Promise<Lesson> {
+  let body: BodyInit;
+  if (lessonData.videoFile) {
+    const formData = new FormData();
+    formData.append("videoFile", lessonData.videoFile);
+    formData.append("title", lessonData.title);
+    formData.append("slug", lessonData.slug);
+    if (lessonData.content) formData.append("content", lessonData.content);
+    if (lessonData.videoUrl) formData.append("videoUrl", lessonData.videoUrl);
+    if (lessonData.durationMinutes !== undefined) formData.append("durationMinutes", String(lessonData.durationMinutes));
+    if (lessonData.isPreview !== undefined) formData.append("isPreview", String(lessonData.isPreview));
+    body = formData;
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { videoFile, ...rest } = lessonData;
+    body = JSON.stringify(rest);
+  }
+
   const data = await lessonApiFetch(`/api/lessons/courses/${courseId}/lessons`, {
     method: 'POST',
-    body: JSON.stringify(lessonData),
+    body,
   });
   return data.lesson;
 }
 
-export async function updateLesson(lessonId: string, updates: UpdateLessonData): Promise<Lesson> {
-  const data = await lessonApiFetch(`/api/lessons/${lessonId}`, {
+export async function updateLesson(id: string, lessonData: UpdateLessonData): Promise<Lesson> {
+  let body: BodyInit;
+  if (lessonData.videoFile) {
+    const formData = new FormData();
+    formData.append("videoFile", lessonData.videoFile);
+    if (lessonData.title) formData.append("title", lessonData.title);
+    if (lessonData.slug) formData.append("slug", lessonData.slug);
+    if (lessonData.content) formData.append("content", lessonData.content);
+    if (lessonData.videoUrl) formData.append("videoUrl", lessonData.videoUrl);
+    if (lessonData.durationMinutes !== undefined) formData.append("durationMinutes", String(lessonData.durationMinutes));
+    if (lessonData.isPreview !== undefined) formData.append("isPreview", String(lessonData.isPreview));
+    if (lessonData.isPublished !== undefined) formData.append("isPublished", String(lessonData.isPublished));
+    if (lessonData.sortOrder !== undefined) formData.append("sortOrder", String(lessonData.sortOrder));
+    body = formData;
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { videoFile, ...rest } = lessonData;
+    body = JSON.stringify(rest);
+  }
+
+  const data = await lessonApiFetch(`/api/lessons/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(updates),
+    body,
   });
   return data.lesson;
 }
 
-export async function deleteLesson(lessonId: string): Promise<void> {
-  await lessonApiFetch(`/api/lessons/${lessonId}`, { method: 'DELETE' });
+export async function deleteLesson(id: string): Promise<void> {
+  await lessonApiFetch(`/api/lessons/${id}`, {
+    method: 'DELETE',
+  });
 }
+
+export async function reorderLessons(courseId: string, lessonIds: string[]): Promise<void> {
+  await lessonApiFetch(`/api/lessons/courses/${courseId}/lessons/reorder`, {
+    method: 'PUT',
+    body: JSON.stringify({ lessonIds }),
+  });
+}
+
+

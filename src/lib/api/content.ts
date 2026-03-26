@@ -71,6 +71,7 @@ export interface UploadContentData {
   isDownloadable: boolean;
   isPublished: boolean;
   thumbnailUrl?: string;
+  courseId?: string;
 }
 
 export interface UpdateContentData {

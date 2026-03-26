@@ -5,14 +5,15 @@ import Link from 'next/link';
 import { Session } from '@/lib/api/sessions';
 import { JoinButton } from './JoinButton';
 import { format } from 'date-fns';
-import { Video, Calendar, Clock, User, ChevronRight } from 'lucide-react';
+import { Video, Calendar, Clock, User, ChevronRight, Trash2 } from 'lucide-react';
 
 interface SessionCardProps {
     session: Session;
     onStatusChange?: (updatedSession: Session) => void;
+    onDelete?: (sessionId: string) => void;
 }
 
-export const SessionCard: React.FC<SessionCardProps> = ({ session, onStatusChange }) => {
+export const SessionCard: React.FC<SessionCardProps> = ({ session, onStatusChange, onDelete }) => {
     const startDate = new Date(session.startTime);
     const endDate = new Date(session.endTime);
 
@@ -61,6 +62,15 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, onStatusChang
                     </span>
                 </div>
                 <div className="flex items-center gap-2">
+                    {onDelete && (
+                        <button
+                            onClick={() => onDelete(session.id)}
+                            className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete session"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    )}
                     <Link
                         href={`/sessions/${session.id}`}
                         className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"

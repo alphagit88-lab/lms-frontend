@@ -9,13 +9,13 @@ import {
   Content,
   ContentType,
   AcademicResourceType, // Added AcademicResourceType
-  ContentFilters, // Retained ContentFilters
   formatFileSize,
   getContentTypeIcon,
   getContentTypeLabel,
   getAcademicResourceTypeLabel,
   ACADEMIC_RESOURCE_TYPES,
 } from '@/lib/api/content';
+import { getMyCourses, Course } from '@/lib/api/courses';
 import AppLayout from '@/components/layout/AppLayout';
 
 export default function InstructorContentPage() {
@@ -382,6 +382,7 @@ function UploadModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const [courses, setCourses] = useState<Course[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -397,11 +398,24 @@ function UploadModal({
     isDownloadable: true,
     isPublished: false,
     thumbnailUrl: '',
+    courseId: '',
   });
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
   const [dragActive, setDragActive] = useState(false);
+
+  useEffect(() => {
+    async function fetchCourses() {
+      try {
+        const data = await getMyCourses();
+        setCourses(data);
+      } catch (err) {
+        console.error('Failed to fetch courses', err);
+      }
+    }
+    fetchCourses();
+  }, []);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -477,6 +491,7 @@ function UploadModal({
         isDownloadable: formData.isDownloadable,
         isPublished: formData.isPublished,
         thumbnailUrl: formData.thumbnailUrl || undefined,
+        courseId: formData.courseId || undefined,
       };
 
       // Simulate progress (in real app, use XHR with progress events)
@@ -589,6 +604,25 @@ function UploadModal({
             <p className="text-xs text-gray-500 mt-1">
               {formData.title.length}/200 characters
             </p>
+          </div>
+
+          {/* Course Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Related Course (Optional)
+            </label>
+            <select
+              value={formData.courseId}
+              onChange={(e) => setFormData({ ...formData, courseId: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Select a course...</option>
+              {courses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.title}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Description */}

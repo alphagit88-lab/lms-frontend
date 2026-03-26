@@ -45,6 +45,7 @@ class AuthAPI {
   private async fetch(endpoint: string, options?: RequestInit) {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
+      cache: 'no-store',
       credentials: 'include', // Important: send cookies with requests
       headers: {
         'Content-Type': 'application/json',

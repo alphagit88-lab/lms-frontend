@@ -40,6 +40,7 @@ export interface Booking {
   cancelledAt?: string;
   cancelledById?: string;
   meetingLink?: string;
+  meetingStartLink?: string;
   reminderSent: boolean;
   amount?: number;
   paymentId?: string;

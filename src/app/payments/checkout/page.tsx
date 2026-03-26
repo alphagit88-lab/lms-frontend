@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { initializePayment, PaymentRequest, PayHereCheckoutParams } from '@/lib/api/payments';
@@ -15,6 +15,7 @@ function CheckoutContent() {
     const [error, setError] = useState('');
     const [payHereParams, setPayHereParams] = useState<PayHereCheckoutParams | null>(null);
     const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+    const submittedRef = useRef(false);
 
     const type = searchParams.get('type');
     const referenceId = searchParams.get('referenceId');
@@ -83,10 +84,12 @@ function CheckoutContent() {
 
     // Auto-submit form when params are ready
     useEffect(() => {
-        if (payHereParams && checkoutUrl) {
+        if (payHereParams && checkoutUrl && !submittedRef.current) {
             const form = document.getElementById('payhere-form') as HTMLFormElement;
             if (form) {
                 console.log('Submitting PayHere form...');
+                submittedRef.current = true;
+                form.target = "_top"; // Force top-level navigation
                 form.submit();
             }
         }
@@ -202,6 +205,7 @@ function CheckoutContent() {
                             method="post" 
                             action={checkoutUrl} 
                             className="hidden"
+                            target="_top" // Ensure we break out of any iframes (e.g. dev environments)
                         >
                             <input type="hidden" name="merchant_id" value={payHereParams.merchant_id} />
                             <input type="hidden" name="return_url" value={payHereParams.return_url} />

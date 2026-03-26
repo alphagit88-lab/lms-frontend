@@ -19,7 +19,7 @@ interface AvailabilityCalendarProps {
   multiSelectMode?: boolean;
 }
 
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM to 8 PM
+const HOURS = Array.from({ length: 24 }, (_, i) => i); // 0 AM to 11 PM
 
 export default function AvailabilityCalendar({
   teacherId,
@@ -229,7 +229,9 @@ export default function AvailabilityCalendar({
           <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] sm:grid-cols-[80px_repeat(7,1fr)] border-b border-gray-100">
             {/* Time Label */}
             <div className="p-1 sm:p-2 text-right pr-2 sm:pr-3 text-[10px] sm:text-xs text-gray-500 font-medium pt-3">
-              {hour === 12
+              {hour === 0
+                ? '12 AM'
+                : hour === 12
                 ? '12 PM'
                 : hour > 12
                 ? `${hour - 12} PM`
