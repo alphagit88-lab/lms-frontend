@@ -51,7 +51,7 @@ const nextConfig: NextConfig = {
     let backendUrl = process.env.BACKEND_URL;
     
     if (!backendUrl) {
-      backendUrl = isDev ? 'http://localhost:5000' : 'https://lms-backend-psi-one.vercel.app';
+      backendUrl = isDev ? 'http://localhost:5000' : 'https://lms-backend-alpha-black.vercel.app';
     }
 
     if (backendUrl.endsWith('/')) {
