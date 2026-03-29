@@ -10,6 +10,8 @@ import {
   deleteCourse,
   togglePublishCourse,
   getCategories,
+  createCategory,
+  updateCategory,
   Course,
   Category,
   UpdateCourseData,
@@ -18,6 +20,7 @@ import {
 } from '@/lib/api/courses';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
+
 import { useAuth } from '@/contexts/AuthContext';
 import ManageLessonsInline from '@/components/instructor/ManageLessonsInline';
 
@@ -34,6 +37,13 @@ function EditCourseContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  
+  // Category variables
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isEditingCategory, setIsEditingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [addingCategoryLoading, setAddingCategoryLoading] = useState(false);
+
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [thumbnailSource, setThumbnailSource] = useState<'url' | 'upload'>('url');
@@ -103,6 +113,39 @@ function EditCourseContent() {
       setCategories(data);
     } catch (err: unknown) {
       console.error('Failed to load categories:', err);
+    }
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    try {
+      setAddingCategoryLoading(true);
+      const slug = newCategoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const newCat = await createCategory({ name: newCategoryName, slug });
+      setCategories(prev => [...prev, newCat]);
+      setFormData(prev => ({ ...prev, categoryId: newCat.id }));
+      setIsAddingCategory(false);
+      setNewCategoryName('');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create category');
+    } finally {
+      setAddingCategoryLoading(false);
+    }
+  };
+
+  const handleEditCategory = async () => {
+    if (!newCategoryName.trim() || !formData.categoryId) return;
+    try {
+      setAddingCategoryLoading(true);
+      const slug = newCategoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const updatedCat = await updateCategory(formData.categoryId, { name: newCategoryName, slug });
+      setCategories(prev => prev.map(cat => cat.id === updatedCat.id ? updatedCat : cat));
+      setIsEditingCategory(false);
+      setNewCategoryName('');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to edit category');
+    } finally {
+      setAddingCategoryLoading(false);
     }
   };
 
@@ -381,11 +424,73 @@ function EditCourseContent() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
-              <label htmlFor="categoryId" className="block text-sm font-medium text-slate-700 mb-1.5">Category</label>
-              <select id="categoryId" name="categoryId" value={formData.categoryId} onChange={handleChange} className={inputClasses}>
-                <option value="">Select a category</option>
-                {categories.map((cat) => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
-              </select>
+              <div className="flex justify-between items-center mb-1.5">
+                <label htmlFor="categoryId" className="block text-sm font-medium text-slate-700">Category</label>
+                <div className="flex gap-2">
+                  {formData.categoryId && !isAddingCategory && !isEditingCategory && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const selectedCat = categories.find(c => c.id === formData.categoryId);
+                        if (selectedCat) {
+                          setNewCategoryName(selectedCat.name);
+                          setIsEditingCategory(true);
+                        }
+                      }}
+                      className="text-xs font-medium text-slate-500 hover:text-blue-600"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isAddingCategory || isEditingCategory) {
+                        setIsAddingCategory(false);
+                        setIsEditingCategory(false);
+                        setNewCategoryName('');
+                      } else {
+                        setIsAddingCategory(true);
+                        setNewCategoryName('');
+                      }
+                    }}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    {isAddingCategory || isEditingCategory ? 'Cancel' : '+ Add New'}
+                  </button>
+                </div>
+              </div>
+              {isAddingCategory || isEditingCategory ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Category Name"
+                    className={inputClasses}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        isEditingCategory ? handleEditCategory() : handleAddCategory();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={isEditingCategory ? handleEditCategory : handleAddCategory}
+                    disabled={!newCategoryName.trim() || addingCategoryLoading}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+                  >
+                    {addingCategoryLoading ? '...' : (isEditingCategory ? 'Save' : 'Add')}
+                  </button>
+                </div>
+              ) : (
+                <select id="categoryId" name="categoryId" value={formData.categoryId} onChange={handleChange} className={inputClasses}>
+                  <option value="">Select a category</option>
+                  {categories.map((cat) => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
+                </select>
+              )}
             </div>
             <div>
               <label htmlFor="level" className="block text-sm font-medium text-slate-700 mb-1.5">

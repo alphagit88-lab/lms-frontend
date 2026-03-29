@@ -354,6 +354,50 @@ export async function getCategories(): Promise<Category[]> {
   return data.categories;
 }
 
+/**
+ * Create a new category
+ */
+export async function createCategory(data: { name: string; slug: string; description?: string; icon?: string; sortOrder?: number }): Promise<Category> {
+  const response = await fetch(`${API_BASE_URL}/api/categories`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create category');
+  }
+
+  const result = await response.json();
+  return result.category;
+}
+
+/**
+ * Update an existing category
+ */
+export async function updateCategory(id: string, data: { name: string; slug: string; description?: string; icon?: string; sortOrder?: number; isActive?: boolean }): Promise<Category> {
+  const response = await fetch(`${API_BASE_URL}/api/categories/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update category');
+  }
+
+  const result = await response.json();
+  return result.category;
+}
+
 // ── Lesson API helpers ──────────────────────────────────────────────
 
 export interface CreateLessonData {
