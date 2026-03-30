@@ -233,9 +233,14 @@ export async function getCourseById(id: string): Promise<Course> {
   }
 
   const data = await response.json();
-  // isEnrolled comes as a separate top-level field from the backend
+  // isEnrolled, enrollmentId, and lessonProgress come from the backend
   const normalizedCourse = normalizeCourseUrls(data.course);
-  return { ...normalizedCourse, isEnrolled: data.isEnrolled ?? false };
+  return { 
+    ...normalizedCourse, 
+    isEnrolled: data.isEnrolled ?? false,
+    enrollmentId: data.enrollmentId,
+    lessonProgress: data.lessonProgress || []
+  } as any;
 }
 
 /**
