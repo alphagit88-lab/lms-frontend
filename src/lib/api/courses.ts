@@ -1,3 +1,5 @@
+import { upload } from '@vercel/blob/client';
+
 // API Configuration
 const API_BASE_URL = typeof window !== "undefined" ? "/proxied-backend" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000");
 
@@ -132,21 +134,20 @@ export interface UpdateCourseData {
  * Upload course media (thumbnail/preview)
  */
 export async function uploadCourseMedia(file: File): Promise<{ url: string }> {
-  const formData = new FormData();
-  formData.append('file', file);
+  const url = await uploadToBlob(file);
+  return { url };
+}
 
-  const response = await fetch(`${API_BASE_URL}/api/courses/upload-media`, {
-    method: 'POST',
-    body: formData,
-    credentials: 'include', // Needed if authenticating via cookies
+/**
+ * Upload any file directly to Vercel Blob from the client.
+ * This bypasses the 4.5MB Vercel serverless body size limit.
+ */
+export async function uploadToBlob(file: File): Promise<string> {
+  const result = await upload(file.name, file, {
+    access: 'public',
+    handleUploadUrl: `${API_BASE_URL}/api/upload/blob`,
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || 'Failed to upload media');
-  }
-
-  return response.json();
+  return result.url;
 }
 
 /**

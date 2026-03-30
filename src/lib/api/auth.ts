@@ -1,5 +1,6 @@
 // API Configuration
 const API_BASE_URL = typeof window !== "undefined" ? "/proxied-backend" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000");
+import { uploadToBlob } from './courses';
 
 export interface User {
   id: string;
@@ -131,20 +132,18 @@ class AuthAPI {
   }
 
   async uploadProfilePicture(file: File): Promise<{ message: string; user: User }> {
-    const formData = new FormData();
-    formData.append('profilePicture', file);
+    const url = await uploadToBlob(file);
 
-    // Don't use this.fetch() because it sets Content-Type to JSON.
-    // For multipart/form-data the browser must set the boundary itself.
     const response = await fetch(`${API_BASE_URL}/api/auth/profile-picture`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: formData,
+      body: JSON.stringify({ profilePictureUrl: url }),
     });
 
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || 'Failed to upload profile picture');
+      throw new Error(data.error || 'Failed to update profile picture');
     }
     return data;
   }

@@ -1,5 +1,5 @@
-// API Configuration
 const API_BASE_URL = typeof window !== "undefined" ? "/proxied-backend" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000");
+import { uploadToBlob } from './courses';
 
 // Types
 export enum ContentType {
@@ -115,26 +115,32 @@ export interface ContentAccessResponse {
  * Upload new content
  */
 export async function uploadContent(data: UploadContentData): Promise<Content> {
-  const formData = new FormData();
-  formData.append('file', data.file);
-  formData.append('title', data.title);
-  if (data.description) formData.append('description', data.description);
-  formData.append('contentType', data.contentType);
-  if (data.resourceType) formData.append('resourceType', data.resourceType);
-  formData.append('language', data.language);
-  formData.append('isPaid', String(data.isPaid));
-  if (data.price) formData.append('price', String(data.price));
-  if (data.subject) formData.append('subject', data.subject);
-  if (data.grade) formData.append('grade', data.grade);
-  if (data.topic) formData.append('topic', data.topic);
-  formData.append('isDownloadable', String(data.isDownloadable));
-  formData.append('isPublished', String(data.isPublished));
-  if (data.thumbnailUrl) formData.append('thumbnailUrl', data.thumbnailUrl);
+  const fileUrl = await uploadToBlob(data.file);
+
+  const payload: any = {
+    title: data.title,
+    description: data.description,
+    contentType: data.contentType,
+    resourceType: data.resourceType,
+    language: data.language,
+    isPaid: data.isPaid,
+    price: data.price,
+    subject: data.subject,
+    grade: data.grade,
+    topic: data.topic,
+    isDownloadable: data.isDownloadable,
+    isPublished: data.isPublished,
+    thumbnailUrl: data.thumbnailUrl,
+    courseId: data.courseId,
+    fileUrl: fileUrl,
+    fileSize: data.file.size,
+  };
 
   const response = await fetch(`${API_BASE_URL}/api/content/upload`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: formData,
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
