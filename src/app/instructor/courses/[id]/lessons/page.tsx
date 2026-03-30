@@ -13,6 +13,7 @@ import {
   Lesson,
   CreateLessonData,
   UpdateLessonData,
+  uploadToBlob,
 } from '@/lib/api/courses';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
@@ -253,11 +254,10 @@ function LessonModal({ open, lesson, onClose, onSave }: LessonModalProps) {
                 )}
               </div>
             )}
-            
             <p className="mt-1 text-xs text-slate-400">
               {form.videoType === 'url' 
                 ? 'YouTube, Vimeo, or direct video link.' 
-                : 'Max size 100MB. MP4, WebM supported.'}
+                : 'Directly upload video (up to 500MB).'}
             </p>
           </div>
 
@@ -374,10 +374,26 @@ function ManageLessonsContent() {
   };
 
   const handleSave = async (data: CreateLessonData | UpdateLessonData) => {
+    let finalData = { ...data };
+
+    // If there's a file, upload it client-side first to bypass 4.5MB Vercel limit
+    if (finalData.videoFile) {
+      try {
+        const uploadedUrl = await uploadToBlob(finalData.videoFile);
+        finalData = {
+          ...finalData,
+          videoUrl: uploadedUrl,
+          videoFile: undefined, // Don't send the file to the backend
+        };
+      } catch (err: any) {
+        throw new Error(`Video upload failed: ${err.message || 'Unknown error'}`);
+      }
+    }
+
     if (editingLesson) {
-      await updateLesson(editingLesson.id, data as UpdateLessonData);
+      await updateLesson(editingLesson.id, finalData as UpdateLessonData);
     } else {
-      await createLesson(courseId, data as CreateLessonData);
+      await createLesson(courseId, finalData as CreateLessonData);
     }
     await load();
   };
