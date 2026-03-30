@@ -241,6 +241,13 @@ export function getContentStreamUrl(id: string): string {
 }
 
 /**
+ * Get the direct download URL for content library items.
+ */
+export function getContentDownloadUrl(id: string): string {
+  return `${API_BASE_URL}/api/content/${id}/download`;
+}
+
+/**
  * Download content
  */
 export async function downloadContent(id: string): Promise<Blob> {
