@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { initializePayment, PaymentRequest, PayHereCheckoutParams } from '@/lib/api/payments';
+import { initializePayment, initializeBankTransfer, PaymentRequest, PayHereCheckoutParams } from '@/lib/api/payments';
 import AppLayout from '@/components/layout/AppLayout';
 
 function CheckoutContent() {
@@ -13,6 +13,7 @@ function CheckoutContent() {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [method, setMethod] = useState<'payhere' | 'manual'>('payhere');
     const [payHereParams, setPayHereParams] = useState<PayHereCheckoutParams | null>(null);
     const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
     const submittedRef = useRef(false);
@@ -42,6 +43,20 @@ function CheckoutContent() {
             setLoading(true);
             setError('');
 
+            if (method === 'manual') {
+                const manualRes = await initializeBankTransfer({
+                    type: type as any,
+                    referenceId,
+                    amount: parseFloat(amountParam),
+                    recipientId: recipientId || undefined,
+                });
+                // Pass order details to the upload page for display
+                router.push(`/checkout/upload-slip/${manualRes.paymentId}?amount=${amountParam}&title=${encodeURIComponent(itemDescription)}`);
+                return;
+            }
+
+            if (!user) return;
+
             const paymentData: PaymentRequest = {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 type: type as any,
@@ -52,12 +67,10 @@ function CheckoutContent() {
                 firstName: user.firstName || 'Student',
                 lastName: user.lastName || 'User',
                 email: user.email,
-                phone: '0000000000',
+                phone: '1234567890', // Default phone if not available
             };
 
-            console.log('Initializing payment:', paymentData);
             const response = await initializePayment(paymentData);
-            console.log('Payment initialized:', response);
 
             if (response.isFree) {
                 router.push(`/payments/success?order_id=${response.paymentId}`);
@@ -159,19 +172,73 @@ function CheckoutContent() {
                         )}
                     </div>
 
+                    <div className="space-y-3">
+                        <label className="text-sm font-semibold text-slate-700 block ml-1">Select Payment Method</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <button
+                                onClick={() => setMethod('payhere')}
+                                className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
+                                    method === 'payhere' 
+                                    ? 'border-blue-600 bg-blue-50/50 shadow-sm ring-1 ring-blue-600' 
+                                    : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'
+                                }`}
+                            >
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${method === 'payhere' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="font-bold text-slate-900">Online Payment</p>
+                                    <p className="text-xs text-slate-500">Pay via PayHere (Visa, Master, Frimi, etc.)</p>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => setMethod('manual')}
+                                className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
+                                    method === 'manual' 
+                                    ? 'border-emerald-600 bg-emerald-50/50 shadow-sm ring-1 ring-emerald-600' 
+                                    : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'
+                                }`}
+                            >
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${method === 'manual' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="font-bold text-slate-900">Bank Transfer</p>
+                                    <p className="text-xs text-slate-500">Upload deposit slip manually</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
                     {!payHereParams ? (
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-4 border border-blue-100 bg-blue-50 rounded-lg text-blue-700 text-sm">
-                                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <p>You will be redirected to PayHere securely to complete your payment.</p>
-                            </div>
+                        <div className="space-y-4 pt-2">
+                            {method === 'payhere' ? (
+                                <div className="flex items-center gap-3 p-4 border border-blue-100 bg-blue-50 rounded-lg text-blue-700 text-sm">
+                                    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <p>You will be redirected to PayHere securely to complete your payment.</p>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-3 p-4 border border-emerald-100 bg-emerald-50 rounded-lg text-emerald-700 text-sm">
+                                    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <p>After clicking below, you'll see our bank details to deposit funds and upload your slip.</p>
+                                </div>
+                            )}
 
                             <button
                                 onClick={handlePayment}
                                 disabled={loading}
-                                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                                className={`w-full py-4 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2 ${
+                                    method === 'payhere' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                                }`}
                             >
                                 {loading ? (
                                     <>
@@ -179,7 +246,7 @@ function CheckoutContent() {
                                         Processing...
                                     </>
                                 ) : (
-                                    <>PAY NOW</>
+                                    <>{method === 'payhere' ? 'PAY NOW' : 'CONTINUE TO BANK DETAILS'}</>
                                 )}
                             </button>
                             
