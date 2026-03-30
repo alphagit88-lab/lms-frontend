@@ -208,7 +208,8 @@ export async function getContentById(id: string): Promise<Content> {
     throw new Error(error.error || 'Failed to fetch content');
   }
 
-  return response.json();
+  const data = await response.json();
+  return data.content || data;
 }
 
 /**

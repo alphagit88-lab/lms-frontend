@@ -279,6 +279,30 @@ export default function ContentDetailPage() {
                             </a>
                           </div>
                         )}
+
+                        {/* Generic File Download Link (for types without interactive preview) */}
+                        {content.contentType !== 'video' && content.contentType !== 'audio' && content.contentType !== 'pdf' && (
+                          <div className="mt-4 p-4 bg-gray-100/50 rounded-xl border border-dashed border-gray-200">
+                             <p className="text-sm text-gray-500 mb-4 italic">
+                               Interactive preview is not available for this file type ({getContentTypeLabel(content.contentType)}). 
+                               Please download the file to view its contents.
+                             </p>
+                             {content.isDownloadable && (
+                                <button
+                                  onClick={handleDownload}
+                                  disabled={downloading}
+                                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2 font-bold shadow-md"
+                                >
+                                  {downloading ? "Downloading..." : "Download to View Content"}
+                                  {!downloading && (
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                  )}
+                                </button>
+                             )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
