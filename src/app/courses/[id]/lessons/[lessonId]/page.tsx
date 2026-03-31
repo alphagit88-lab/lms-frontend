@@ -355,6 +355,25 @@ export default function LessonViewerPage() {
                                                 {sortedLessons.length} lessons
                                             </span>
                                         </div>
+
+                                        {/* Dynamic Progress Bar */}
+                                        <div className="mt-8 pt-6 border-t border-slate-100">
+                                            <div className="flex items-center justify-between mb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                <span>Your Progress</span>
+                                                <span className="text-blue-600">
+                                                    {Math.round((lessonProgress.filter(p => p.isCompleted).length / Math.max(sortedLessons.length, 1)) * 100)}%
+                                                </span>
+                                            </div>
+                                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="h-full bg-blue-600 transition-all duration-700 ease-out rounded-full shadow-[0_0_8px_rgba(37,99,235,0.3)]"
+                                                    style={{ width: `${Math.round((lessonProgress.filter(p => p.isCompleted).length / Math.max(sortedLessons.length, 1)) * 100)}%` }}
+                                                />
+                                            </div>
+                                            <p className="mt-2.5 text-[9px] font-bold text-slate-400 tracking-tight">
+                                                {lessonProgress.filter(p => p.isCompleted).length} / {sortedLessons.length} Lessons Completed
+                                            </p>
+                                        </div>
                                     </div>
                                     
                                     <div className="divide-y divide-slate-50 max-h-[60vh] overflow-y-auto custom-scrollbar">

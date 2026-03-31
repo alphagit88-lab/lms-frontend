@@ -13,6 +13,7 @@ export interface Enrollment {
     completedAt?: string;
     lastAccessedAt?: string;
     course?: Course;
+    lessonProgress?: { lessonId: string; isCompleted: boolean }[];
     student?: {
         id: string;
         firstName: string;

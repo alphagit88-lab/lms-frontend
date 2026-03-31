@@ -124,13 +124,28 @@ export default function MyCoursesPage() {
                                         {/* Progress Bar */}
                                         <div className="mt-6 mb-8">
                                             <div className="flex items-center justify-between mb-2">
-                                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Course Progress</span>
-                                                <span className="text-[10px] font-semibold text-slate-900">{enrollment.progressPercentage}%</span>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Course Progress</span>
+                                                    {enrollment.course?.lessons && (
+                                                        <span className="text-[9px] font-bold text-blue-500 uppercase mt-0.5 tracking-wider">
+                                                            {enrollment.lessonProgress?.filter(lp => lp.isCompleted).length || 0} / {enrollment.course.lessons.length} Lessons Completed
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <span className="text-[10px] font-semibold text-slate-900">
+                                                    {enrollment.course?.lessons && enrollment.course.lessons.length > 0 
+                                                        ? Math.round(((enrollment.lessonProgress?.filter(lp => lp.isCompleted).length || 0) / enrollment.course.lessons.length) * 100)
+                                                        : enrollment.progressPercentage}%
+                                                </span>
                                             </div>
                                             <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full bg-blue-600 transition-all duration-1000 ease-out rounded-full shadow-[0_0_10px_rgba(37,99,235,0.3)]"
-                                                    style={{ width: `${enrollment.progressPercentage}%` }}
+                                                    style={{ 
+                                                        width: `${enrollment.course?.lessons && enrollment.course.lessons.length > 0 
+                                                            ? Math.round(((enrollment.lessonProgress?.filter(lp => lp.isCompleted).length || 0) / enrollment.course.lessons.length) * 100)
+                                                            : enrollment.progressPercentage}%` 
+                                                    }}
                                                 />
                                             </div>
                                         </div>
